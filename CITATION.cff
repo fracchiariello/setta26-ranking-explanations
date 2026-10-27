@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper."
+title: "Formal Explanations of Machine Learning Ranking Systems via Answer Set Programming"
+authors:
+  - family-names: Chiariello
+    given-names: Francesco
+    orcid: "https://orcid.org/0000-0001-7855-7480"
+  - family-names: Marques-Silva
+    given-names: Joao
+    orcid: "https://orcid.org/0000-0002-6632-3086"
+repository-code: "https://github.com/fracchiariello/setta26-ranking-explanations"
+license: MIT
+preferred-citation:
+  type: conference-paper
+  title: "Formal Explanations of Machine Learning Ranking Systems via Answer Set Programming"
+  authors:
+    - family-names: Chiariello
+      given-names: Francesco
+      orcid: "https://orcid.org/0000-0001-7855-7480"
+    - family-names: Marques-Silva
+      given-names: Joao
+      orcid: "https://orcid.org/0000-0002-6632-3086"
+  conference:
+    name: "SETTA 2026"
+  year: 2026

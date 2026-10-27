@@ -130,6 +130,28 @@ python3 summarize_bruteforce.py
 number of relevant features, for scaling experiments; `voting_performance.py`
 compares the selected forests' test performance under hard and soft voting.
 
+## Datasets
+
+The datasets in `data/` are from the UCI Machine Learning Repository
+(https://archive.ics.uci.edu), redistributed here for reproducibility; see each
+dataset's UCI page for its license and citation.
+
+| Folder | UCI dataset |
+|---|---|
+| `automobile` | Automobile |
+| `bank+marketing` | Bank Marketing |
+| `breast+cancer` | Breast Cancer Wisconsin (Diagnostic) |
+| `chess` | Chess (King-Rook vs. King) |
+| `gamma+telescope` | MAGIC Gamma Telescope |
+| `glioma` | Glioma Grading Clinical and Mutation Features |
+| `heart+disease` | Heart Disease |
+| `income` | Adult |
+| `obesity` | Estimation of Obesity Levels Based On Eating Habits and Physical Condition |
+| `online+shoppers` | Online Shoppers Purchasing Intention Dataset |
+| `students+dropout` | Predict Students' Dropout and Academic Success |
+| `wine+quality` | Wine Quality |
+
 ## License
 
-MIT, see `LICENSE`.
+The code is released under the MIT license, see `LICENSE`. The datasets keep
+their original licenses.
