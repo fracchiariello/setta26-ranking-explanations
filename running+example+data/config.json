@@ -1,0 +1,12 @@
+{
+  "csv_file": "running_example.csv",
+  "separator": ",",
+  "header_row": true,
+  "target_column": 4,
+  "ignore_columns": [],
+  "label_mapping": {
+    "low": 0,
+    "medium": 1,
+    "high": 2
+  }
+}

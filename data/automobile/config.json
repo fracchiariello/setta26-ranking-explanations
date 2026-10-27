@@ -1,0 +1,31 @@
+{
+  "csv_file": "imports-85_clean.csv",
+  "separator": ",",
+  "header_row": false,
+  "target_column": 0,
+  "ignore_columns": [],
+  "feature_encoding": {
+    "2": {
+      "alfa-romero": 0, "audi": 1, "bmw": 2, "chevrolet": 3, "dodge": 4,
+      "honda": 5, "isuzu": 6, "jaguar": 7, "mazda": 8, "mercedes-benz": 9,
+      "mercury": 10, "mitsubishi": 11, "nissan": 12, "peugot": 13,
+      "plymouth": 14, "porsche": 15, "renault": 16, "saab": 17, "subaru": 18,
+      "toyota": 19, "volkswagen": 20, "volvo": 21
+    },
+    "3": {"diesel": 0, "gas": 1},
+    "4": {"std": 0, "turbo": 1},
+    "6": {"convertible": 0, "hardtop": 1, "hatchback": 2, "sedan": 3, "wagon": 4},
+    "7": {"4wd": 0, "fwd": 1, "rwd": 2},
+    "8": {"front": 0, "rear": 1},
+    "14": {"dohc": 0, "dohcv": 1, "l": 2, "ohc": 3, "ohcf": 4, "ohcv": 5, "rotor": 6},
+    "17": {"1bbl": 0, "2bbl": 1, "4bbl": 2, "idi": 3, "mfi": 4, "mpfi": 5, "spdi": 6, "spfi": 7}
+  },
+  "label_mapping": {
+    "-2": 0,
+    "-1": 1,
+    "0": 2,
+    "1": 3,
+    "2": 4,
+    "3": 5
+  }
+}

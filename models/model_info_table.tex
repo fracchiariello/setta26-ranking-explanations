@@ -1,0 +1,24 @@
+\begin{table}[t]
+\centering
+\caption{Best random forest per dataset (selected by weighted $F_1$) and the size of the full ASP program (\texttt{encoding.lp} + forest + \texttt{pair\_0.lp}, with $\mathit{selected}(F)$ asserted for every feature in \texttt{pair\_0.lp}). $T$: trees; $D_{\max}$: realized maximum tree depth; Feat: features used by the forest (dataset features in parentheses); $C$: classes predicted on the test set (dataset classes in parentheses); Nodes: forest nodes; Split: avg.\ split points per feature; $F_1^{W}$: weighted $F_1$ on the test set; Rules: ground rules; Atoms: ground atoms incl.\ auxiliaries (both pre-simplification, from the grounder).}
+\label{tab:model-info}
+\small
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+Dataset & $T$ & $D_{\max}$ & Feat & $C$ & Nodes & Split & $F_1^{W}$ & Rules & Atoms \\
+\midrule
+automobile & 30 & 5 & 22 (25) & 5 (6) & 446 & 6.5 & 0.743 & 30896 & 7551 \\
+bank+marketing & 30 & 7 & 16 (16) & 2 (2) & 998 & 15.7 & 0.878 & 217047 & 8699 \\
+breast+cancer & 10 & 3 & 20 (30) & 2 (2) & 112 & 2.5 & 0.965 & 5502 & 1999 \\
+chess & 30 & 7 & 6 (6) & 13 (18) & 2336 & 5.8 & 0.411 & 62227 & 24225 \\
+gamma+telescope & 20 & 7 & 10 (10) & 2 (2) & 1070 & 50.8 & 0.850 & 498598 & 9589 \\
+glioma & 30 & 5 & 21 (23) & 2 (2) & 390 & 2.7 & 0.857 & 24428 & 4450 \\
+heart+disease & 10 & 3 & 9 (10) & 2 (2) & 118 & 3.7 & 0.831 & 4428 & 1582 \\
+income & 50 & 7 & 14 (14) & 2 (2) & 1890 & 9.0 & 0.838 & 76388 & 14201 \\
+obesity & 40 & 7 & 16 (16) & 7 (7) & 3182 & 67.1 & 0.898 & 2673412 & 31278 \\
+online+shoppers & 10 & 7 & 16 (17) & 2 (2) & 294 & 7.4 & 0.874 & 36003 & 3155 \\
+students+dropout & 30 & 7 & 33 (36) & 3 (3) & 2084 & 10.5 & 0.715 & 171973 & 17123 \\
+wine+quality & 40 & 7 & 11 (11) & 3 (7) & 3586 & 75.7 & 0.540 & 1292681 & 29217 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,73 @@
+======================================================================
+RANDOM FOREST MODEL STATISTICS
+======================================================================
+
+Model Configuration:
+  Number of trees: 10
+  Max depth: 7
+  Min samples split: 20
+  Min samples leaf: 10
+  CCP alpha: 0.001
+  Number of features: 17
+  Number of classes: 2
+  Classes predicted: 2
+  Classes: False, True
+
+Training Data:
+  Training set size: 9864
+  Test set size: 2466
+  Target column: 17
+  Ignore columns: []
+  Feature columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+  Feature names: ['Administrative', 'Administrative_Duration', 'Informational', 'Informational_Duration', 'ProductRelated', 'ProductRelated_Duration', 'BounceRates', 'ExitRates', 'PageValues', 'SpecialDay', 'Month', 'OperatingSystems', 'Browser', 'Region', 'TrafficType', 'VisitorType', 'Weekend']
+
+Performance Metrics:
+  Train Accuracy: 0.9059
+  Test Accuracy:  0.8852
+
+Per-Class Metrics:
+     Class   Precision      Recall    F1-Score   Support
+  --------------------------------------------------------
+     False      0.9016      0.9679      0.9336      2055
+      True      0.7462      0.4720      0.5782       411
+  --------------------------------------------------------
+  macro avg      0.8239      0.7200      0.7559      2466
+  weighted avg      0.8757      0.8852      0.8744      2466
+
+Quadratic Weighted Kappa: 0.5157
+
+Confusion Matrix:
+          False    True
+   False    1989      66
+    True     217     194
+
+Forest Size:
+  Total nodes:  294
+  Total leaves: 152
+  Max depth:    7  (avg: 6.3)
+  Avg nodes per tree:  29.4
+  Avg leaves per tree: 15.2
+  Avg split points per feature: 7.44
+
+Feature Usage (across entire forest):
+  Used (16/17):
+    Administrative  Administrative_Duration  Informational  Informational_Duration  ProductRelated  ProductRelated_Duration  BounceRates  ExitRates  PageValues  SpecialDay
+    Month  OperatingSystems  Browser  TrafficType  VisitorType  Weekend
+  Unused (1/17):
+    Region
+
+Per-Tree Statistics:
+    Tree   Depth    Nodes   Leaves   Features   Train Acc    Test Acc
+  --------------------------------------------------------------------
+       0       7       29       15          8      0.8978      0.8836
+       1       7       39       20          8      0.8678      0.8524
+       2       5       21       11          7      0.9006      0.8881
+       3       7       43       22         10      0.8927      0.8686
+       4       7       29       15          7      0.8945      0.8735
+       5       6       33       17         10      0.8921      0.8710
+       6       7       35       18         11      0.8868      0.8727
+       7       6       25       13          8      0.8986      0.8893
+       8       6       21       11          7      0.8966      0.8812
+       9       5       19       10          7      0.8974      0.8856
+
+======================================================================

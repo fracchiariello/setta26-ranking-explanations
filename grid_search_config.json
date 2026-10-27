@@ -1,0 +1,11 @@
+{
+  "datasets": [
+    "breast+cancer+wisconsin+diagnostic",
+    "wine+quality"
+  ],
+  "trees": [10, 20, 30, 40, 50],
+  "depth": [3, 5, 7],
+  "min_samples_leaf": 10,
+  "min_samples_split": 20,
+  "ccp_alpha": 0.001
+}

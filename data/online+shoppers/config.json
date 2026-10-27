@@ -1,0 +1,19 @@
+{
+  "csv_file": "online_shoppers_intention.csv",
+  "separator": ",",
+  "header_row": true,
+  "target_column": 17,
+  "ignore_columns": [],
+  "feature_encoding": {
+    "10": {
+      "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "June": 6,
+      "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
+    },
+    "15": {"New_Visitor": 0, "Returning_Visitor": 1, "Other": 2},
+    "16": {"False": 0, "True": 1}
+  },
+  "label_mapping": {
+    "False": 0,
+    "True": 1
+  }
+}

@@ -1,0 +1,7 @@
+Model                    Combinations  Label [s]  Pair [s]  Total [s]   #AXps   Size
+------------------------------------------------------------------------------------
+chess/t30_d7                   71,680      0.078     0.001      0.079     2.0   4.20
+heart+disease/t10_d3          241,920      0.068     0.011      0.078     3.7   2.98
+
+Label = enumerate and label the whole bin space (once per model); Pair = per-pair search over all subsets;
+Total = Label + Pair, i.e. one instance run alone; #AXps and Size = per-pair means.

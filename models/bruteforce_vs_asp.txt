@@ -1,0 +1,50 @@
+Exhaustive search vs ASP, same machine (Intel Core Ultra 7 265H, one thread)
+Averages over the 10 pairs of each model.
+
+First AXp
+                           chess   heart disease         glioma     breast cancer
+Features                       6               9             21                20
+Bin combinations          71,680         241,920     39,845,888     6,228,541,440
+Solved: brute force        10/10           10/10          10/10             10/10
+        ASP                10/10           10/10          10/10             10/10
+Avg time [s]: brute force  0.015           0.022          8.508             8.355
+              ASP          0.503           0.076          0.382             0.078
+Faster                    brute f.        brute f.         ASP               ASP
+                            (34x)          (3.5x)         (22x)            (107x)
+Avg AXp size: brute force    4.2             2.8            5.7               5.6
+              ASP            4.3             2.9            4.1               5.6
+Avg combinations labelled  1,842          75,684      6,343,101        10,969,973
+  (brute force)
+
+All AXps
+                           chess   heart disease
+Avg time [s]: brute force  0.079           0.078
+              ASP          0.569           0.077
+Avg #AXps:    brute force    2.0             3.7
+              ASP            2.0             3.7
+Avg AXp size: brute force    4.2             3.0
+              ASP            4.2             3.0
+
+Agreement
+  All AXps: identical AXp sets on 20/20 pairs (chess, heart disease).
+  First AXp: the brute-force AXp is one of the AXps enumerated by ASP on 40/40
+    pairs. The first AXp found depends on the search order (feature index order
+    for the brute force, the MUS search in WASP), so sizes need not coincide.
+  Brute force vs encoding.lp: every brute-force AXp is UNSAT and each of its
+    one-smaller subsets SAT; with all AXps, every subset verdict agrees
+    (5,760 subsets) and clingo enumerates exactly the same bin combinations
+    with the same labels.
+
+Brute force: benchmark_bruteforce.py [--first] --validate
+  (models/bruteforce_performance.txt, models/bruteforce_first_performance.txt).
+  Combinations are labelled by querying the sklearn forest as a black box under
+  hard majority voting. All AXps: enumerate and label the whole bin space, then
+  decide every subset; time = labelling + one pair. First AXp: deletion-based,
+  one exhaustive sufficiency check per feature, each enumerating only the
+  combinations agreeing with item 1 / item 2 on the subset and stopping at the
+  first counterexample.
+ASP: run_explanations.py --pairs 10 --repeats 3 (clingo 5.8.0 | wasp --mus,
+  wasp commit 4332268); mean of 3 repetitions. The paper's Table 2 times,
+  measured on the cluster (Intel Xeon 2.4 GHz), are 2-3x higher; AXp counts and
+  sizes are the same.
+Avg AXp size = mean over pairs of the per-pair mean size, as in Table 2.

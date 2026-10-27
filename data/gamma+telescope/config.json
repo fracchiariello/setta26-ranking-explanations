@@ -1,0 +1,11 @@
+{
+  "csv_file": "magic04.csv",
+  "separator": ",",
+  "header_row": false,
+  "target_column": 10,
+  "ignore_columns": [],
+  "label_mapping": {
+    "g": 0,
+    "h": 1
+  }
+}

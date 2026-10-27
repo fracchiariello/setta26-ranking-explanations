@@ -1,0 +1,19 @@
+{
+  "csv_file": "winequality.csv",
+  "separator": ";",
+  "header_row": true,
+  "target_column": 11,
+  "ignore_columns": [12],
+  "label_mapping": {
+    "3": 0,
+    "4": 1,
+    "5": 2,
+    "6": 3,
+    "7": 4,
+    "8": 5,
+    "9": 6
+  },
+  "extra_columns": {
+    "12": "type"
+  }
+}

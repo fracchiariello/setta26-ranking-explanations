@@ -1,0 +1,62 @@
+======================================================================
+RANDOM FOREST MODEL STATISTICS
+======================================================================
+
+Model Configuration:
+  Number of trees: 3
+  Max depth: 2
+  Min samples split: 5
+  Min samples leaf: 8
+  CCP alpha: 0.01
+  Number of features: 4
+  Number of classes: 3
+  Classes: low, medium, high
+
+Training Data:
+  Training set size: 160
+  Test set size: 40
+  Target column: 4
+  Ignore columns: []
+  Feature columns: [0, 1, 2, 3]
+  Feature names: ['age', 'bmi', 'glucose', 'previous_stroke']
+
+Performance Metrics:
+  Train Accuracy: 0.8250
+  Test Accuracy:  0.7750
+
+Per-Class Metrics:
+     Class   Precision      Recall    F1-Score   Support
+  --------------------------------------------------------
+       low      1.0000      0.5000      0.6667        10
+    medium      0.6667      0.8000      0.7273        15
+      high      0.8235      0.9333      0.8750        15
+  --------------------------------------------------------
+  macro avg      0.8301      0.7444      0.7563        40
+
+Confusion Matrix:
+            low  medium    high
+     low       5       5       0
+  medium       0      12       3
+    high       0       1      14
+
+Forest Size:
+  Total nodes:  19
+  Total leaves: 11
+  Max depth:    2  (avg: 2.0)
+  Avg nodes per tree:  6.3
+  Avg leaves per tree: 3.7
+
+Feature Usage (across entire forest):
+  Used (4/4):
+    age  bmi  glucose  previous_stroke
+  Unused (0/4):
+    (none)
+
+Per-Tree Statistics:
+    Tree   Depth    Nodes   Leaves   Features   Train Acc    Test Acc
+  --------------------------------------------------------------------
+       0       2        7        4          3      0.5813      0.6500
+       1       2        5        3          2      0.5437      0.5500
+       2       2        7        4          3      0.6750      0.5000
+
+======================================================================

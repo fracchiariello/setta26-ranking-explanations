@@ -1,0 +1,9 @@
+Model                      Combinations  Solved   Size   Time [s]         Labelled
+----------------------------------------------------------------------------------
+chess/t30_d7                     71,680   10/10    4.2      0.015            1,842
+heart+disease/t10_d3            241,920   10/10    2.8      0.022           75,684
+glioma/t30_d5                39,845,888   10/10    5.7      8.508        6,343,101
+breast+cancer/t10_d3      6,228,541,440   10/10    5.6      8.355       10,969,973
+
+First AXp by deletion: one exhaustive sufficiency check per candidate feature.
+Size, Time and Labelled (combinations labelled) are means over solved pairs; timeout 600s per pair.

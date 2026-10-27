@@ -1,0 +1,26 @@
+{
+  "csv_file": "ObesityDataSet_raw_and_data_sinthetic.csv",
+  "separator": ",",
+  "header_row": true,
+  "target_column": 16,
+  "ignore_columns": [],
+  "label_mapping": {
+    "Insufficient_Weight": 0,
+    "Normal_Weight": 1,
+    "Overweight_Level_I": 2,
+    "Overweight_Level_II": 3,
+    "Obesity_Type_I": 4,
+    "Obesity_Type_II": 5,
+    "Obesity_Type_III": 6
+  },
+  "feature_encoding": {
+    "0": {"Female": 0, "Male": 1},
+    "4": {"no": 0, "yes": 1},
+    "5": {"no": 0, "yes": 1},
+    "8": {"no": 0, "Sometimes": 1, "Frequently": 2, "Always": 3},
+    "9": {"no": 0, "yes": 1},
+    "11": {"no": 0, "yes": 1},
+    "14": {"no": 0, "Sometimes": 1, "Frequently": 2, "Always": 3},
+    "15": {"Automobile": 0, "Bike": 1, "Motorbike": 2, "Public_Transportation": 3, "Walking": 4}
+  }
+}

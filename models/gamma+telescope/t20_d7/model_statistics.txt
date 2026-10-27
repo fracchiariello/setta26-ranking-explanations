@@ -1,0 +1,82 @@
+======================================================================
+RANDOM FOREST MODEL STATISTICS
+======================================================================
+
+Model Configuration:
+  Number of trees: 20
+  Max depth: 7
+  Min samples split: 20
+  Min samples leaf: 10
+  CCP alpha: 0.001
+  Number of features: 10
+  Number of classes: 2
+  Classes predicted: 2
+  Classes: g, h
+
+Training Data:
+  Training set size: 15216
+  Test set size: 3804
+  Target column: 10
+  Ignore columns: []
+  Feature columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  Feature names: ['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9']
+
+Performance Metrics:
+  Train Accuracy: 0.8619
+  Test Accuracy:  0.8552
+
+Per-Class Metrics:
+     Class   Precision      Recall    F1-Score   Support
+  --------------------------------------------------------
+         g      0.8462      0.9484      0.8944      2460
+         h      0.8787      0.6845      0.7696      1344
+  --------------------------------------------------------
+  macro avg      0.8625      0.8164      0.8320      3804
+  weighted avg      0.8577      0.8552      0.8503      3804
+
+Quadratic Weighted Kappa: 0.6663
+
+Confusion Matrix:
+              g       h
+       g    2333     127
+       h     424     920
+
+Forest Size:
+  Total nodes:  1070
+  Total leaves: 545
+  Max depth:    7  (avg: 7.0)
+  Avg nodes per tree:  53.5
+  Avg leaves per tree: 27.2
+  Avg split points per feature: 50.80
+
+Feature Usage (across entire forest):
+  Used (10/10):
+    f0  f1  f2  f3  f4  f5  f6  f7  f8  f9
+  Unused (0/10):
+    (none)
+
+Per-Tree Statistics:
+    Tree   Depth    Nodes   Leaves   Features   Train Acc    Test Acc
+  --------------------------------------------------------------------
+       0       7       51       26          9      0.8220      0.8097
+       1       7       49       25          8      0.8277      0.8278
+       2       7       59       30          8      0.8449      0.8378
+       3       7       51       26          8      0.8167      0.8134
+       4       7       47       24          9      0.8084      0.8028
+       5       7       57       29          8      0.8237      0.8291
+       6       7       49       25          9      0.8254      0.8241
+       7       7       57       29          9      0.8341      0.8199
+       8       7       57       29         10      0.8300      0.8223
+       9       7       55       28          9      0.8218      0.8073
+      10       7       59       30          9      0.8045      0.7957
+      11       7       33       17          8      0.7961      0.7847
+      12       7       53       27          8      0.8180      0.8063
+      13       7       59       30          8      0.8212      0.8181
+      14       7       55       28          7      0.8288      0.8157
+      15       7       55       28          9      0.8325      0.8325
+      16       7       71       36         10      0.8210      0.8126
+      17       7       57       29          9      0.8262      0.8233
+      18       7       45       23          9      0.8000      0.7999
+      19       7       51       26          9      0.8335      0.8360
+
+======================================================================

@@ -1,0 +1,11 @@
+{
+  "csv_file": "wdbc.csv",
+  "separator": ",",
+  "header_row": false,
+  "target_column": 1,
+  "ignore_columns": [0],
+  "label_mapping": {
+    "B": 0,
+    "M": 1
+  }
+}

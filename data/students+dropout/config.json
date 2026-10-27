@@ -1,0 +1,12 @@
+{
+  "csv_file": "data.csv",
+  "separator": ";",
+  "header_row": true,
+  "target_column": 36,
+  "ignore_columns": [],
+  "label_mapping": {
+    "Dropout": 0,
+    "Enrolled": 1,
+    "Graduate": 2
+  }
+}

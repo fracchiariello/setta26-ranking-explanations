@@ -1,0 +1,11 @@
+{
+  "csv_file": "TCGA_InfoWithGrade.csv",
+  "separator": ",",
+  "header_row": true,
+  "target_column": 0,
+  "ignore_columns": [],
+  "label_mapping": {
+    "0": 0,
+    "1": 1
+  }
+}

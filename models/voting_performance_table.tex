@@ -1,0 +1,26 @@
+\begin{table}[t]
+\centering
+\caption{Test-set performance of the selected random forests under soft voting (S, scikit-learn's \texttt{predict}) and hard majority voting (H, ties broken in favour of the smallest class index). $F_1^{M}$/$F_1^{W}$: macro/weighted $F_1$; QWK: quadratic weighted kappa; Diff: test items classified differently by the two rules.}
+\label{tab:voting-performance}
+\small
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{Accuracy} & \multicolumn{2}{c}{$F_1^{M}$} & \multicolumn{2}{c}{$F_1^{W}$} & \multicolumn{2}{c}{QWK} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Dataset & S & H & S & H & S & H & S & H & Diff \\
+\midrule
+automobile & 0.756 & 0.683 & 0.595 & 0.540 & 0.743 & 0.675 & 0.875 & 0.764 & 3/41 \\
+bank+marketing & 0.902 & 0.896 & 0.629 & 0.631 & 0.878 & 0.876 & 0.272 & 0.273 & 9/905 \\
+breast+cancer & 0.965 & 0.956 & 0.962 & 0.953 & 0.965 & 0.956 & 0.925 & 0.905 & 1/114 \\
+chess & 0.437 & 0.411 & 0.309 & 0.266 & 0.411 & 0.382 & 0.443 & 0.460 & 731/5612 \\
+gamma+telescope & 0.855 & 0.851 & 0.832 & 0.824 & 0.850 & 0.844 & 0.666 & 0.652 & 81/3804 \\
+glioma & 0.857 & 0.851 & 0.857 & 0.851 & 0.857 & 0.851 & 0.715 & 0.703 & 1/168 \\
+heart+disease & 0.831 & 0.797 & 0.815 & 0.773 & 0.831 & 0.794 & 0.630 & 0.547 & 2/59 \\
+income & 0.850 & 0.846 & 0.773 & 0.764 & 0.838 & 0.833 & 0.551 & 0.535 & 54/6033 \\
+obesity & 0.898 & 0.870 & 0.895 & 0.865 & 0.898 & 0.869 & 0.983 & 0.975 & 23/423 \\
+online+shoppers & 0.885 & 0.882 & 0.756 & 0.733 & 0.874 & 0.866 & 0.516 & 0.473 & 59/2466 \\
+students+dropout & 0.745 & 0.745 & 0.627 & 0.629 & 0.715 & 0.715 & 0.696 & 0.694 & 17/885 \\
+wine+quality & 0.577 & 0.575 & 0.227 & 0.226 & 0.540 & 0.538 & 0.454 & 0.449 & 28/1300 \\
+\bottomrule
+\end{tabular}
+\end{table}
