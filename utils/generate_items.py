@@ -77,7 +77,12 @@ def bin_interval(feat_idx, b):
 
 
 def random_bins():
-    """Return a dict {feat_idx: bin} for all features in split_points."""
+    """Return a dict {feat_idx: bin} for all features in split_points.
+
+    Bins are drawn uniformly, so an item may fall in a bin that contains no
+    natural number for a natural-valued feature: features are treated as real
+    valued (see the bin encoding comment in model2ASP.py).
+    """
     return {f: random.randint(0, len(split_points[f])) for f in feat_indices}
 
 

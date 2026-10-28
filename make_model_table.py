@@ -57,10 +57,10 @@ def program_size(rf_lp, pair_lp):
     timeout/failure.
 
     selected(F) is asserted for EVERY feature the pair assigns (the F's in its
-    bin(_,F,_) facts), so the explanation machinery (disagree/agree and the
-    item 3/4 derivations in encoding.lp, all guarded by selected(F)) actually
-    grounds — otherwise selected/1 is undefined and those rules collapse to
-    nothing. Feature derivation matches compute_mus.py.
+    bin(_,F,_) facts), so the explanation machinery (the item 3/4 derivations
+    in encoding.lp, guarded by selected(F)) actually grounds — otherwise
+    selected/1 is undefined and those rules collapse to nothing. Feature
+    derivation matches compute_mus.py.
     """
     pair_text = open(pair_lp).read()
     feats = sorted(set(int(f) for f in re.findall(

@@ -111,6 +111,14 @@ print(f"Classes: {classes}")
 # thresholds; bin k means it is > threshold[k-1] and <= threshold[k]; the
 # last bin means it is > all thresholds.
 #
+# Natural-valued (and label-encoded categorical) features are treated as real
+# valued, as the forest itself does. A threshold may then fall on an integer
+# (sklearn splits at the midpoint of the values present in a node, e.g. 35.0
+# between 34 and 36), so a bin such as (35, 35.5] can contain no natural
+# number. Such bins are theoretically empty, but are kept: they are non-empty
+# over the reals, where the forest's predictions and the explanations are
+# defined.
+#
 # ASP atoms:
 #   bin(FeatIdx, Bin)          — the discretized bin of feature FeatIdx
 #

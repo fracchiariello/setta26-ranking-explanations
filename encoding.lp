@@ -1,6 +1,6 @@
 % ============================================================
 % encoding.lp — model-independent reasoning rules
-% Traversal, agreement, and majority-voting rules.
+% Traversal, majority-voting, and explanation rules.
 % Load together with random_forest.lp.
 % ============================================================
 
@@ -24,16 +24,6 @@ next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), bin(I,F,Bv), Bv > B,  ri
 
 class(I,T,C) :- next_node(I,T,N), leaf_class(T,N,C).
 
-% --- Agreement relation ---
-% selected(F): feature F is selected as part of the candidate explanation.
-%              compute_mus.py wraps *all* the features F in a __debug__ choice rule; 
-%              wasp --mus minimises over them.
-% agree(I,J): items I and J agree on every selected feature.
-
-disagree(I,J,F) :- item(I), item(J), selected(F), bin(I,F,B1), bin(J,F,B2), B1 != B2.
-disagree(I,J) :- disagree(I,J,_).
-agree(I,J) :- item(I), item(J), not disagree(I,J).
-
 % ============================================================
 % --- Majority voting ---
 % ============================================================
@@ -49,8 +39,11 @@ max_votes(I,M) :- item(I), M = #max{V : vote(I,_,V)}.
 prediction(I,C) :- max_votes(I,M), C = #min{C2 : vote(I,C2,M)}.
 
 % --- Explanation ---
+% selected(F): feature F is selected as part of the candidate explanation.
+%              compute_mus.py wraps *all* the features F in a __debug__ choice rule;
+%              wasp --mus minimises over them.
 % Find items 3 and 4 such that:
-%   - item 3 agrees with item 1 on all selected features
+%   - item 3 agrees with item 1 on all selected features (it copies their bins)
 %   - item 4 agrees with item 2 on all selected features
 %   - the predicted class of item 3 is strictly higher than that of item 4
 % On non-selected features, bins of 3 and 4 are free (from random_forest.lp choice rules).

@@ -130,6 +130,19 @@ python3 summarize_bruteforce.py
 number of relevant features, for scaling experiments; `voting_performance.py`
 compares the selected forests' test performance under hard and soft voting.
 
+## Paper Results
+
+The ASP columns of the results table and the per-instance figure come from
+`slurm/table2_asp.sbatch`: 12 models, 10 pairs, 3 repetitions, with the same
+timeouts. A pair counts as solved only if every repetition finishes.
+
+```bash
+mkdir -p results/explanations_pair_parts/logs && sbatch slurm/table2_asp.sbatch
+python3 merge_explanation_parts.py
+python3 make_table2.py      # results table, with the baseline columns
+python3 plot_instances.py   # per-instance figure
+```
+
 ## Datasets
 
 The datasets in `data/` are from the UCI Machine Learning Repository
