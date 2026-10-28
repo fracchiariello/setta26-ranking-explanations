@@ -24,6 +24,15 @@ next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), bin(I,F,Bv), Bv > B,  ri
 
 class(I,T,C) :- next_node(I,T,N), leaf_class(T,N,C).
 
+% --- Agreement relation (commented out) ---
+% agree(I,J): items I and J agree on every selected feature.
+% Not needed: the explanation rules below make items 3 and 4 agree with
+% items 1 and 2 by copying their bins, and no rule uses agree/2.
+%
+% disagree(I,J,F) :- item(I), item(J), selected(F), bin(I,F,B1), bin(J,F,B2), B1 != B2.
+% disagree(I,J) :- disagree(I,J,_).
+% agree(I,J) :- item(I), item(J), not disagree(I,J).
+
 % ============================================================
 % --- Majority voting ---
 % ============================================================
