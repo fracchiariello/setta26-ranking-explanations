@@ -2,18 +2,20 @@
 Run the explanation experiments over every model and every pair.
 
 For each model (models/<dataset>/t<trees>_d<depth>/) and each pair
-(pairs/pair_*.lp) the script computes, via the clingo | wasp --mus pipeline:
+(pairs/pair_*.lp) the script computes, with compute_mus.py (deletion-based MUS
+extraction, clingo as the oracle):
 
-  * the FIRST explanation        (wasp -n 1) — its size and the time to find it
-  * the SET of ALL explanations  (wasp -n 0) — how many, their min/max/avg size,
-                                                and the time to enumerate them all
+  * the FIRST explanation        (-n 1, deletion) — its size and the time to find it
+  * the SET of ALL explanations  (-n 0, MARCO)    — how many, their min/max/avg size,
+                                                    and the time to enumerate them all
 
 An explanation (AXp) is a MUS of the `selected/1` features: a subset-minimal set
 of features that, when fixed to item-1's values, forces the prediction order to
 hold — i.e. a minimal abductive explanation of the pair's classification.
 
 Each timing can be repeated (--repeats) and reported as mean ± stdev; a per-run
-timeout guards both the first-AXp and the all-AXps computation.
+timeout guards both the first-AXp and the all-AXps computation. A first-AXp
+run that times out still records the weak AXp its deletion had reached.
 
 Results are printed and teed to:
     results/explanations_<timestamp>.txt   (human-readable tables)
@@ -23,11 +25,11 @@ Usage:
     python run_explanations.py
     python run_explanations.py --datasets breast+cancer glioma
     python run_explanations.py --pairs 5 --repeats 3
-    python run_explanations.py --pair-files models/breast+cancer/t10_d3/pairs/pair_0.lp
+    python run_explanations.py --pair-files models/breast+cancer/t100_d3/pairs/pair_0.lp
     python run_explanations.py --first-only --timeout-first 120
     python run_explanations.py --models-dir models --pairs 5
 
-Requires clingo and wasp on PATH (wasp falls back to the bundled build path).
+Requires the clingo Python package.
 """
 
 import argparse
@@ -35,17 +37,16 @@ import datetime
 import glob
 import json
 import math
+import multiprocessing
 import os
 import re
-import shutil
-import subprocess
-import threading
 import time
 
+import clingo
+
+from compute_mus import Oracle, candidate_features, enumerate_muses
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WASP_BIN = shutil.which("wasp") or os.path.join(
-    os.path.expanduser("~"), "Downloads", "alviano-wasp-4332268", "build", "release", "wasp"
-)
 ENCODING_LP = os.path.join(BASE_DIR, "encoding.lp")
 MODELS_DIR_DEFAULT = os.path.join(BASE_DIR, "models")
 
@@ -97,88 +98,106 @@ def normalize_paths(paths):
 
 
 # --------------------------------------------------------------------------- #
-# clingo | wasp --mus pipeline
+# Deletion-based MUS extraction (compute_mus.py), with a timeout
 # --------------------------------------------------------------------------- #
-def add_debug_wrappers(program, feat_indices):
-    """Wrap every candidate feature in a __debug__ assumption so wasp can find
-    the minimal unsatisfiable sets of `selected/1` atoms (the AXps)."""
-    lines = [program.strip(), ""]
-    for f in feat_indices:
-        lines.append(f"selected({f}) :- __debug__(selected({f})).")
-        lines.append(f"{{__debug__(selected({f}))}}.")
-    lines.append("#show __debug__/1.")
-    return "\n".join(lines)
+FORK = multiprocessing.get_context("fork")
 
 
-def run_mus(program, n_mus, timeout):
-    """Run clingo | wasp --mus on `program`; return (wall_s, muses, timed_out).
+def mus_worker(program_files, n_mus, conn):
+    """Child process: compute the MUSes and stream them to conn as ("mus", axp).
+    A first-AXp run also sends ("ground", seconds) once grounded, ("call",
+    [size, unsat, seconds]) after every solve call, and ("weak", axp) after
+    every deletion."""
+    program = "\n".join(open(p).read() for p in program_files)
+    oracle = Oracle(program, candidate_features(program))
+    on_drop = None
+    if n_mus == 1:
+        conn.send(("ground", oracle.ground_s))
+        oracle.on_call = lambda size, unsat, s: conn.send(("call", [size, unsat, s]))
+        on_drop = lambda mus: conn.send(("weak", mus))
+    for mus in enumerate_muses(oracle, n_mus, on_drop):
+        conn.send(("mus", mus))
+    conn.close()
 
-    wall_s    : elapsed wall time in seconds (None on timeout)
+
+def run_mus(program_files, n_mus, timeout):
+    """Compute up to n_mus MUSes (0 = all) of `program_files` in a forked child;
+    return (wall_s, muses, weak_axp, timed_out, calls).
+
+    wall_s    : elapsed wall time in seconds, grounding included (None on timeout)
     muses     : list of AXps, each a sorted list of feature indices. On timeout
-                this holds whatever wasp streamed before being killed.
-    timed_out : True if the wasp process was killed by the timeout.
+                this holds whatever the child streamed before being killed.
+    weak_axp  : the last weak AXp the first deletion reached (first-AXp runs
+                only, else None)
+    timed_out : True if the child was killed by the timeout.
+    calls     : first-AXp runs only, else None: {"ground_s": grounding time,
+                "calls": [[size, unsat, seconds], ...]}, one entry per solve
+                call (size of the checked subset, its verdict, its time), also
+                on timeout.
 
-    wasp's stdout is drained by a background thread so MUSes emitted before a
-    timeout are not lost (communicate() would discard buffered output on kill).
+    The child is forked from this process, so the time covers grounding and
+    solving but not interpreter start-up; it is taken when the child closes
+    the pipe.
     """
-    clingo_cmd = ["clingo", "--output=smodels", "-"]
-    wasp_cmd = ["stdbuf", "-oL", WASP_BIN, "--mus=__debug__", f"-n{n_mus}"]
-
+    recv, send = FORK.Pipe(duplex=False)
     t0 = time.perf_counter()
-    clingo_proc = subprocess.Popen(
-        clingo_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-    )
-    stdout_clingo, _ = clingo_proc.communicate(input=program.encode())
+    proc = FORK.Process(target=mus_worker, args=(program_files, n_mus, send), daemon=True)
+    proc.start()
+    send.close()
 
-    wasp_proc = subprocess.Popen(
-        wasp_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-    )
+    muses, weak, wall = [], None, None
+    calls = {"ground_s": None, "calls": []} if n_mus == 1 else None
+    deadline = t0 + timeout
+    while True:
+        remaining = deadline - time.perf_counter()
+        if remaining <= 0 or not recv.poll(remaining):
+            break
+        try:
+            kind, value = recv.recv()
+        except EOFError:
+            wall = time.perf_counter() - t0
+            break
+        if kind == "mus":
+            muses.append(value)
+        elif kind == "weak":
+            weak = value
+        elif kind == "ground":
+            calls["ground_s"] = value
+        else:
+            calls["calls"].append(value)
 
-    muses = []
-
-    def reader():
-        for raw in wasp_proc.stdout:
-            m = re.match(r"\[MUS #\d+\]:(.*)", raw.decode(errors="replace"))
-            if m:
-                feats = re.findall(r"__debug__\(selected\((\d+)\)\)", m.group(1))
-                muses.append(sorted(int(f) for f in feats))
-
-    reader_thread = threading.Thread(target=reader, daemon=True)
-    wasp_proc.stdin.write(stdout_clingo)
-    wasp_proc.stdin.close()
-    reader_thread.start()
-
-    try:
-        wasp_proc.wait(timeout=timeout)
-        wall = time.perf_counter() - t0
-        timed_out = False
-    except subprocess.TimeoutExpired:
-        wasp_proc.kill()
-        wall = None
-        timed_out = True
-
-    reader_thread.join(timeout=5)
-    return wall, muses, timed_out
+    timed_out = wall is None
+    if timed_out:
+        proc.kill()
+    proc.join()
+    recv.close()
+    if not timed_out and proc.exitcode != 0:
+        raise RuntimeError(f"MUS computation exited with code {proc.exitcode}")
+    return wall, muses, weak, timed_out, calls
 
 
-def repeat_run(program, n_mus, repeats, timeout):
-    """Run run_mus `repeats` times; return (mean_s, std_s, muses, timed_out).
+def repeat_run(program_files, n_mus, repeats, timeout):
+    """Run run_mus `repeats` times; return
+    (mean_s, std_s, muses, weak_axp, timed_out, calls).
 
-    `muses` is the AXp list from the last (completed) repetition — wasp's result
-    is deterministic across repeats in practice. Stops at the first timeout and
-    returns (None, None, partial_muses, True).
+    `muses` is the AXp list from the last (completed) repetition — the
+    deletion order is fixed, so the result is the same across repeats. `calls`
+    lists run_mus's per-call record of every repetition run. Stops at the first
+    timeout and returns (None, None, partial_muses, weak_axp, True, calls).
     """
     times = []
     last_muses = []
+    calls = []
     for _ in range(repeats):
-        t, m, timed_out = run_mus(program, n_mus, timeout)
+        t, m, weak, timed_out, c = run_mus(program_files, n_mus, timeout)
+        calls.append(c)
         if timed_out:
-            return None, None, m, True
+            return None, None, m, weak, True, calls
         times.append(t)
         last_muses = m
     mean = sum(times) / len(times)
     std = math.sqrt(sum((t - mean) ** 2 for t in times) / len(times))
-    return mean, std, last_muses, False
+    return mean, std, last_muses, None, False, calls
 
 
 # --------------------------------------------------------------------------- #
@@ -263,11 +282,11 @@ def main():
     rep = args.repeats
     pair_file_filter = normalize_paths(args.pair_files)
     print("=" * 92)
-    print("EXPLANATION EXPERIMENTS  (clingo | wasp --mus)")
+    print("EXPLANATION EXPERIMENTS  (deletion-based MUS extraction, clingo oracle)")
     print(f"models dir:     {args.models_dir}")
     print(f"models:         {len(models)}   "
           f"({'specific pair files' if pair_file_filter else f'max {args.pairs} pairs each'})")
-    print(f"wasp:           {WASP_BIN}")
+    print(f"clingo:         {clingo.__version__}")
     print(f"repeats:        {rep}")
     print(f"first only:     {args.first_only}")
     print(f"timeout first:  {args.timeout_first}s   timeout all: "
@@ -292,8 +311,6 @@ def main():
 
         with open(rf_lp) as f:
             rf_content = f.read()
-        with open(ENCODING_LP) as f:
-            enc_content = f.read()
 
         print(f"\n{'─'*110}")
         print(f"Model: {dataset}/{config}   ({len(pairs)} pairs)")
@@ -309,15 +326,14 @@ def main():
             with open(pair_path) as f:
                 pair_content = f.read()
 
-            program_raw = rf_content + "\n" + enc_content + "\n" + pair_content
+            program_files = [rf_lp, ENCODING_LP, pair_path]
             feat_indices = sorted(set(int(f) for f in re.findall(
-                r"bin\(\s*\d+\s*,\s*(\d+)\s*,\s*\d+\s*\)\.", program_raw)))
+                r"bin\(\s*\d+\s*,\s*(\d+)\s*,\s*\d+\s*\)\.", rf_content + pair_content)))
             n_feats = len(feat_indices)
-            program = add_debug_wrappers(program_raw, feat_indices)
 
             # --- first explanation: size + time ---
-            mf, sf, muses_first, to_first = repeat_run(
-                program, n_mus=1, repeats=rep, timeout=args.timeout_first)
+            mf, sf, muses_first, weak_first, to_first, calls_first = repeat_run(
+                program_files, n_mus=1, repeats=rep, timeout=args.timeout_first)
             first_size = len(muses_first[0]) if (not to_first and muses_first) else None
             first_axp = muses_first[0] if (not to_first and muses_first) else None
 
@@ -327,6 +343,10 @@ def main():
                 "first": {
                     "size": first_size, "axp": first_axp,
                     "time_mean_s": mf, "time_std_s": sf, "timeout": to_first,
+                    "weak_axp": weak_first,
+                    # One entry per repetition run: grounding time and every
+                    # solve call as [subset size, unsat, seconds].
+                    "call_log": calls_first,
                 },
                 "all": None,
             }
@@ -346,8 +366,8 @@ def main():
                 continue
 
             # --- set of all explanations: count, sizes, time ---
-            ma, sa, muses_all, to_all = repeat_run(
-                program, n_mus=0, repeats=rep, timeout=timeout_all)
+            ma, sa, muses_all, _, to_all, _ = repeat_run(
+                program_files, n_mus=0, repeats=rep, timeout=timeout_all)
             n_axps = len(muses_all)
             mn, mx, av = size_stats(muses_all)
             s_all = fmt_t(ma, sa, rep)

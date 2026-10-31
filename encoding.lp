@@ -12,15 +12,24 @@
 % leaf_class(T,X,C)  : leaf X of tree T predicts class C.
 %                      A node is a leaf iff it has a leaf_class fact.
 % bin(I,F,B)         : item I is assigned to bin B for feature F.
+% bin_max(F,K)       : the bins of feature F are 0..K.
 % class_idx(C)       : C is a valid class index.
+
+% --- Bin order ---
+% le(I,F,B): the bin of item I for feature F is at most B (order encoding).
+% Every node testing F against B reads this one atom, so the ground program
+% grows with the number of nodes plus the number of bins, not their product.
+
+le(I,F,B) :- bin(I,F,B).
+le(I,F,B+1) :- le(I,F,B), bin_max(F,K), B < K.
 
 % --- Tree traversal ---
 % next_node(I,T,N): node N is on the path for item I in tree T.
 % class(I,T,C):     tree T predicts class C for item I.
 
 next_node(I,T,0) :- item(I), tree(T).
-next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), bin(I,F,Bv), Bv <= B, left_node(T,N1,N2).
-next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), bin(I,F,Bv), Bv > B,  right_node(T,N1,N2).
+next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), le(I,F,B), left_node(T,N1,N2).
+next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), not le(I,F,B), right_node(T,N1,N2).
 
 class(I,T,C) :- next_node(I,T,N), leaf_class(T,N,C).
 
@@ -49,8 +58,8 @@ prediction(I,C) :- max_votes(I,M), C = #min{C2 : vote(I,C2,M)}.
 
 % --- Explanation ---
 % selected(F): feature F is selected as part of the candidate explanation.
-%              compute_mus.py wraps *all* the features F in a __debug__ choice rule;
-%              wasp --mus minimises over them.
+%              compute_mus.py declares selected(F) external for every feature F
+%              and sets it in each solve call while it minimises the selection.
 % Find items 3 and 4 such that:
 %   - item 3 agrees with item 1 on all selected features (it copies their bins)
 %   - item 4 agrees with item 2 on all selected features

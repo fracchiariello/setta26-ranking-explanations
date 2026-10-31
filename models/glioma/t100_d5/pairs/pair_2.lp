@@ -1,0 +1,51 @@
+% class_1=1 (1), class_2=1 (1)
+
+item(1).
+bin(1,0,0).       % Gender <= 0.5
+bin(1,1,12).      % Age_at_diagnosis (27.915, 28.635]
+bin(1,2,0).       % Race <= 0.5
+bin(1,3,0).       % IDH1 <= 0.5
+bin(1,4,0).       % TP53 <= 0.5
+bin(1,5,1).       % ATRX > 0.5
+bin(1,6,0).       % PTEN <= 0.5
+bin(1,7,1).       % EGFR > 0.5
+bin(1,8,1).       % CIC > 0.5
+bin(1,9,1).       % MUC16 > 0.5
+bin(1,10,1).      % PIK3CA > 0.5
+bin(1,11,0).      % NF1 <= 0.5
+bin(1,12,0).      % PIK3R1 <= 0.5
+bin(1,13,1).      % FUBP1 > 0.5
+bin(1,14,1).      % RB1 > 0.5
+bin(1,15,0).      % NOTCH1 <= 0.5
+bin(1,16,1).      % BCOR > 0.5
+bin(1,17,1).      % CSMD3 > 0.5
+bin(1,18,0).      % SMARCA4 <= 0.5
+bin(1,19,1).      % GRIN2A > 0.5
+bin(1,20,0).      % IDH2 <= 0.5
+bin(1,21,1).      % FAT4 > 0.5
+bin(1,22,0).      % PDGFRA <= 0.5
+
+item(2).
+bin(2,0,0).       % Gender <= 0.5
+bin(2,1,159).     % Age_at_diagnosis (71.465, 71.73]
+bin(2,2,2).       % Race (1.5, 2.5]
+bin(2,3,0).       % IDH1 <= 0.5
+bin(2,4,0).       % TP53 <= 0.5
+bin(2,5,1).       % ATRX > 0.5
+bin(2,6,0).       % PTEN <= 0.5
+bin(2,7,0).       % EGFR <= 0.5
+bin(2,8,1).       % CIC > 0.5
+bin(2,9,1).       % MUC16 > 0.5
+bin(2,10,0).      % PIK3CA <= 0.5
+bin(2,11,0).      % NF1 <= 0.5
+bin(2,12,1).      % PIK3R1 > 0.5
+bin(2,13,1).      % FUBP1 > 0.5
+bin(2,14,0).      % RB1 <= 0.5
+bin(2,15,0).      % NOTCH1 <= 0.5
+bin(2,16,0).      % BCOR <= 0.5
+bin(2,17,0).      % CSMD3 <= 0.5
+bin(2,18,0).      % SMARCA4 <= 0.5
+bin(2,19,1).      % GRIN2A > 0.5
+bin(2,20,0).      % IDH2 <= 0.5
+bin(2,21,0).      % FAT4 <= 0.5
+bin(2,22,0).      % PDGFRA <= 0.5

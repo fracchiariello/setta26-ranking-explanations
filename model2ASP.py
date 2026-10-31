@@ -9,6 +9,7 @@ from sklearn import tree as sklearn_tree
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'utils'))
 from merge_split_points import merge_split_points
 from agglomerative_split_points import agglomerative_split_points
+from empty_bins import merge_empty_bins, snap, snap32
 
 parser = argparse.ArgumentParser(
     description="Convert a trained random forest into ASP facts (random_forest.lp)."
@@ -28,6 +29,10 @@ parser.add_argument('--agglo-tol', type=float, default=0.0,
                          '(default: 0.0). Only used with --strategy agglomerative.')
 parser.add_argument('--agglo-criterion', choices=['gini', 'entropy'], default='gini',
                     help='Impurity criterion for agglomerative merge (default: gini).')
+parser.add_argument('--keep-empty-bins', action='store_true',
+                    help='Keep the bins that no input can reach: no integer for an '
+                         'integer-valued feature, no float32 value for a real-valued '
+                         'one (by default they are merged, see utils/empty_bins.py).')
 parser.add_argument('--dataset', default=None, metavar='NAME',
                     help='Dataset name under data/ for config lookup. Defaults to '
                          'the model directory name; set this when the model lives '
@@ -94,6 +99,12 @@ if args.bins is not None:
           f"(strategy: {args.strategy})...")
     merge_split_points(model_dir, args.bins, args.strategy)
 
+# Merge the bins that no input reaches (no integer, or no float32 value).
+int_feats = set()
+if not args.keep_empty_bins:
+    print("\nMerging theoretically empty bins of integer-valued features...")
+    int_feats = merge_empty_bins(model_dir, dataset_dir)
+
 split_points_path = os.path.join(model_dir, 'split_points.json')
 with open(split_points_path, 'r') as f:
     raw = json.load(f)
@@ -111,13 +122,16 @@ print(f"Classes: {classes}")
 # thresholds; bin k means it is > threshold[k-1] and <= threshold[k]; the
 # last bin means it is > all thresholds.
 #
-# Natural-valued (and label-encoded categorical) features are treated as real
-# valued, as the forest itself does. A threshold may then fall on an integer
-# (sklearn splits at the midpoint of the values present in a node, e.g. 35.0
-# between 34 and 36), so a bin such as (35, 35.5] can contain no natural
-# number. Such bins are theoretically empty, but are kept: they are non-empty
-# over the reals, where the forest's predictions and the explanations are
-# defined.
+# On integer-valued (and label-encoded categorical) features a threshold may
+# fall on an integer (sklearn splits at the midpoint of the values present in a
+# node, e.g. 35.0 between 34 and 36), so a bin such as (35, 35.5] can contain no
+# integer. Likewise, since the forest compares float32 inputs, two thresholds of
+# a real-valued feature can enclose no float32 value. Such theoretically empty
+# bins are merged (utils/empty_bins.py): the thresholds of an integer-valued
+# feature are moved to floor(t) + 0.5, those of a real-valued one to the largest
+# float32 not above t, where the forest's test x <= t gives the same result on
+# every input, and thresholds that coincide become one. --keep-empty-bins keeps
+# them.
 #
 # ASP atoms:
 #   bin(FeatIdx, Bin)          — the discretized bin of feature FeatIdx
@@ -137,10 +151,14 @@ print(f"Classes: {classes}")
 #                                 Precomputed here so encoding.lp needs only the
 #                                 single majority class, not the full counts.
 #
-# Traversal rules use bin/2 to navigate the tree:
-#   next_node(T, N2) :- node(T, 0, F, B), bin(F, Bv), Bv <= B, left_node(T, 0, N2).
-#   next_node(T, N2) :- node(T, 0, F, B), bin(F, Bv), Bv > B, right_node(T, 0, N2).
-#   ... (recursive cases)
+#   bin_max(F, K)              — the bins of feature F are 0..K
+#
+# Traversal rules (encoding.lp) read the bin order le(I, F, B), "the bin of item
+# I for feature F is at most B", derived once per feature and bin:
+#   le(I, F, B)   :- bin(I, F, B).
+#   le(I, F, B+1) :- le(I, F, B), bin_max(F, K), B < K.
+#   next_node(I, T, N2) :- next_node(I, T, N1), node(T, N1, F, B), le(I, F, B), left_node(T, N1, N2).
+#   next_node(I, T, N2) :- next_node(I, T, N1), node(T, N1, F, B), not le(I, F, B), right_node(T, N1, N2).
 #
 # The forest prediction is hard (majority) voting: each tree casts one vote for
 # the class of the leaf the item reaches, and the class with the most votes wins
@@ -172,6 +190,7 @@ rf_lines.append("%                      A node is a leaf iff it has a leaf_class
 rf_lines.append("% bin(I,F,B)         : item I is assigned to bin B for feature F. With sorted")
 rf_lines.append("%                      thresholds [t1<...<tk], bin 0 means v<=t1, bin j means")
 rf_lines.append("%                      tj<v<=tj+1, bin k means v>tk. A \"bin <= B\" test is \"v <= t(B+1)\".")
+rf_lines.append("% bin_max(F,K)       : the bins of feature F are 0..K.")
 rf_lines.append("% class_idx(C)       : C is a valid class index.")
 rf_lines.append("% ============================================================")
 rf_lines.append("")
@@ -185,6 +204,7 @@ for feat_idx in sorted(split_points.keys()):
     bins = list(range(n_bins))
     rf_lines.append(f"% Feature {feat_idx} ({feature_names[feat_idx]}): {n_bins} bins  (thresholds: {split_points[feat_idx]})")
     rf_lines.append(f"{{bin(I,{feat_idx},B) : B = {bins[0]}..{bins[-1]}}} = 1 :- item(I).")
+    rf_lines.append(f"bin_max({feat_idx},{bins[-1]}).")
     rf_lines.append("")
 
 # ---- Tree structural facts ----
@@ -195,6 +215,8 @@ rf_lines.append("")
 def threshold_to_bin(feat_idx, threshold):
     """Return the bin index b such that value <= threshold iff bin <= b."""
     pts = split_points.get(feat_idx, [])
+    if not args.keep_empty_bins:
+        threshold = snap(threshold) if feat_idx in int_feats else snap32(threshold)
     for b, pt in enumerate(pts):
         if abs(pt - threshold) < 1e-12:
             return b

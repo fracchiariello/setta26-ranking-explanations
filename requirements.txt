@@ -1,4 +1,5 @@
-# Python dependencies for the MUS / abductive-explanation pipeline.
+# Python dependencies for the MUS / abductive-explanation pipeline. The clingo
+# package is the only solver needed: compute_mus.py uses its Python API.
 # Pinned to the versions this project was developed against.
 #   pip install -r requirements.txt
 #
@@ -12,15 +13,3 @@ numpy==2.4.4
 pandas==3.0.2
 scikit-learn==1.8.0
 
-# ── External tools (NOT pip-installable — install separately) ────────────────
-# The benchmarking pipeline shells out to two ASP solver binaries:
-#
-#   clingo  — also used as the `clingo` CLI (the pip `clingo` package above
-#             ships the `clingo` executable too, so installing it covers both).
-#
-#   wasp    — Alviano's WASP solver, used for `--mus` minimal-unsatisfiable-set
-#             extraction (clingo | wasp --mus). No pip package exists; build it
-#             from source: https://github.com/alviano/wasp
-#             benchmark_mus.py finds it via `which wasp`, else falls back to
-#             ~/Downloads/alviano-wasp-*/build/release/wasp — put the binary on
-#             your PATH or update WASP_BIN in benchmark_mus.py.

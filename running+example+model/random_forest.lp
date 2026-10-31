@@ -1,5 +1,5 @@
 % ============================================================
-% random_forest.lp — RF facts for running+example
+% random_forest.lp — RF facts for ../running+example+data
 % 3 trees  |  4 features
 % RF-dependent: bin domains and tree structural facts.
 % Load together with encoding.lp.
@@ -14,23 +14,28 @@
 % bin(I,F,B)         : item I is assigned to bin B for feature F. With sorted
 %                      thresholds [t1<...<tk], bin 0 means v<=t1, bin j means
 %                      tj<v<=tj+1, bin k means v>tk. A "bin <= B" test is "v <= t(B+1)".
+% bin_max(F,K)       : the bins of feature F are 0..K.
 % class_idx(C)       : C is a valid class index.
 % ============================================================
 
 % --- Feature bin domains ---
 % bin(I,F,B): item I is assigned to bin B for feature F.
 
-% Feature 0 (age): 3 bins  (thresholds: [61.5, 65.0])
+% Feature 0 (age): 3 bins  (thresholds: [61.5, 65.5])
 {bin(I,0,B) : B = 0..2} = 1 :- item(I).
+bin_max(0,2).
 
 % Feature 1 (bmi): 3 bins  (thresholds: [38.0, 38.85000038146973])
 {bin(I,1,B) : B = 0..2} = 1 :- item(I).
+bin_max(1,2).
 
 % Feature 2 (glucose): 4 bins  (thresholds: [125.5, 172.1500015258789, 178.75])
 {bin(I,2,B) : B = 0..3} = 1 :- item(I).
+bin_max(2,3).
 
 % Feature 3 (previous_stroke): 2 bins  (thresholds: [0.5])
 {bin(I,3,B) : B = 0..1} = 1 :- item(I).
+bin_max(3,1).
 
 % --- Tree structural facts ---
 

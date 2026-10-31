@@ -33,9 +33,11 @@ import clingo
 # Traversal + soft/majority voting rules, copied verbatim from encoding.lp so
 # that clingo computes prediction/2 exactly as compute_mus.py will.
 REASONING_RULES = """
+le(I,F,B) :- bin(I,F,B).
+le(I,F,B+1) :- le(I,F,B), bin_max(F,K), B < K.
 next_node(I,T,0) :- item(I), tree(T).
-next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), bin(I,F,Bv), Bv <= B, left_node(T,N1,N2).
-next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), bin(I,F,Bv), Bv > B,  right_node(T,N1,N2).
+next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), le(I,F,B), left_node(T,N1,N2).
+next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), not le(I,F,B), right_node(T,N1,N2).
 class(I,T,C) :- next_node(I,T,N), leaf_class(T,N,C).
 vote(I,C,V) :- item(I), class_idx(C), V = #count{T : class(I,T,C)}.
 max_votes(I,M) :- item(I), M = #max{V : vote(I,_,V)}.

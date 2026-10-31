@@ -1,0 +1,41 @@
+============================================================================================
+EXPLANATION EXPERIMENTS  (deletion-based MUS extraction, clingo oracle)
+models dir:     models
+models:         10   (specific pair files)
+clingo:         5.8.0
+repeats:        3
+first only:     True
+timeout first:  3600s   timeout all: n/a
+============================================================================================
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Model: automobile/t100_d7   (1 pairs)
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Pair        Feats  1st size                1st time   #AXps   min   max    avg                All time
+  ----------  -----  --------  ----------------------  ------  ----  ----  -----  ----------------------
+  pair_99.lp     25        17        1411.3 ± 11.7 ms       —     —     —      —                       —
+
+[bank+marketing/t100_d8]  no pair files — skipping
+
+[breast+cancer/t100_d3]  no pair files — skipping
+
+[gamma+telescope/t100_d8]  no pair files — skipping
+
+[glioma/t100_d5]  no pair files — skipping
+
+[heart+disease/t100_d3]  no pair files — skipping
+
+[income/t100_d8]  no pair files — skipping
+
+[obesity/t100_d8]  no pair files — skipping
+
+[online+shoppers/t100_d8]  no pair files — skipping
+
+[students+dropout/t100_d8]  no pair files — skipping
+
+============================================================================================
+SUMMARY  (per model, averaged over its non-timed-out pairs)
+============================================================================================
+  Model                               Pairs  Avg 1st sz      Avg 1st t  Avg #AXps      Avg all t
+  ----------------------------------  -----  ----------  -------------  ---------  -------------
+  automobile/t100_d7                      1        17.0      1411.3 ms          —              —

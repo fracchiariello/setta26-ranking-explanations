@@ -16,8 +16,8 @@ Pipeline:
 
 2. LABEL the same combinations with the trained sklearn model
    (random_forest.pkl, auto-detected next to the input .lp files or given via
-   --pkl): bins are converted to feature values via split_points.json (same
-   midpoint convention as utils/generate_items.py) and per-tree votes are
+   --pkl): bins are converted to feature values via split_points.json (the
+   bin representatives of utils/empty_bins.py) and per-tree votes are
    aggregated with the same hard-vote, lowest-class tie-break semantics. The
    two labelings are checked for compliance; any disagreement is reported.
 
@@ -35,8 +35,8 @@ Pipeline:
    flagged.
 
 An AXp is a subset-minimal sufficient set: count = 0, but every proper subset
-has count > 0. This is the same notion computed by compute_mus.py via
-wasp --mus, here obtained by exhaustive enumeration as a ground-truth check.
+has count > 0. This is the same notion computed by compute_mus.py with
+clingo, here obtained by exhaustive enumeration as a ground-truth check.
 
 Candidate features are derived from the bin/3 facts in the input files,
 exactly as in compute_mus.py.
@@ -50,6 +50,9 @@ import subprocess
 import sys
 from collections import Counter
 from itertools import combinations
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "utils"))
+from empty_bins import bin_value  # noqa: E402
 
 
 # Atoms to extract from the models
@@ -65,9 +68,11 @@ SHOW_DIRECTIVES = "#show bin/3.\n#show prediction/2.\n#show class/3.\n#show topv
 # the lowest-class break). prediction(I,C) is the single resolved class; when
 # topvote has more than one C for an item, that item's vote was a tie.
 TRAVERSAL_RULES = """
+le(I,F,B) :- bin(I,F,B).
+le(I,F,B+1) :- le(I,F,B), bin_max(F,K), B < K.
 next_node(I,T,0) :- item(I), tree(T).
-next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), bin(I,F,Bv), Bv <= B, left_node(T,N1,N2).
-next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), bin(I,F,Bv), Bv > B,  right_node(T,N1,N2).
+next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), le(I,F,B), left_node(T,N1,N2).
+next_node(I,T,N2) :- next_node(I,T,N1), node(T,N1,F,B), not le(I,F,B), right_node(T,N1,N2).
 class(I,T,C) :- next_node(I,T,N), leaf_class(T,N,C).
 vote(I,C,V) :- item(I), class_idx(C), V = #count{T : class(I,T,C)}.
 max_votes(I,M) :- item(I), M = #max{V : vote(I,_,V)}.
@@ -204,8 +209,8 @@ def format_items(model: str, items: tuple, feat_info: dict, indent: str = "  ") 
 class PklLabeler:
     """Label bin combinations directly with the sklearn forest.
 
-    Bins are converted to feature values with the same midpoint convention as
-    utils/generate_items.py. The label is the MAJORITY-VOTE class: each tree
+    Bins are converted to feature values with the bin representatives of
+    utils/empty_bins.py, as in utils/generate_items.py. The label is the MAJORITY-VOTE class: each tree
     predicts one class (its leaf's argmax), the votes are counted, and ties are
     broken to the LOWEST class index — matching the ASP encoding's
     prediction(I,C) = #min{C2 : vote(I,C2,M)}. (Not forest.predict(), which is
@@ -224,13 +229,7 @@ class PklLabeler:
     def _vector(self, bins: dict):
         x = self.np.zeros(self.forest.n_features_in_)
         for f, b in bins.items():
-            ts = self.split_points[f]
-            if b == 0:
-                x[f] = ts[0] - 1.0
-            elif b == len(ts):
-                x[f] = ts[-1] + 1.0
-            else:
-                x[f] = (ts[b - 1] + ts[b]) / 2.0
+            x[f] = bin_value(self.split_points[f], b)
         return x
 
     def labels(self, bin_dicts: list):

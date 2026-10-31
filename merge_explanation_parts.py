@@ -154,6 +154,10 @@ def aggregate_section(records, section):
     completed = [s for s in sections if not s.get("timeout")]
     source = sections[0] if section == "all" else first_completed(records, section)
     mean, std = mean_std(s.get("time_mean_s") for s in completed)
+    if len(completed) == 1:
+        # A single part that ran every repetition itself (--repeats): keep the
+        # spread it measured.
+        std = completed[0].get("time_std_s")
     timed_out = any(s.get("timeout") for s in sections)
     completed_or_partial = completed or sections
 
@@ -162,6 +166,12 @@ def aggregate_section(records, section):
             "size": source.get("size") if source else None,
             "size_values": [s.get("size") for s in completed_or_partial],
             "axp": source.get("axp") if source else None,
+            # Grounding time and solve calls ([size, unsat, seconds]) of every
+            # repetition run.
+            "call_log": [c for s in sections for c in (s.get("call_log") or []) if c],
+            # Smallest weak AXp a timed-out repetition had reached.
+            "weak_axp": min((s["weak_axp"] for s in sections if s.get("weak_axp")),
+                            key=len, default=None),
             "time_mean_s": mean,
             "time_std_s": std,
             "timeout": timed_out,

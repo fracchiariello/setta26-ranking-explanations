@@ -104,8 +104,8 @@ python3 compute_mus.py running+example+model/random_forest.lp encoding.lp \
 ```
 
 ```
-MUS #1: selected features = [0, 1]       % age + bmi
-MUS #2: selected features = [0, 2]       % age + glucose
+MUS #1: selected features = [0, 2]       % age + glucose
+MUS #2: selected features = [0, 1]       % age + bmi
 ```
 
 Two alternative minimal explanations of why patient 2 scores higher:

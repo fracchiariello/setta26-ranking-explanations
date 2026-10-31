@@ -1,24 +1,27 @@
 """Regenerate the per-dataset best-model LaTeX table, including ASP program size.
 
 For each pruned best model (models/<dataset>/t*_d*/), this:
-  - reads model_statistics.txt for the model facts and weighted-F1;
+  - reads model_statistics.txt for the model facts and weighted-F1, and
+    split_points.json for the average number of split points per feature, after
+    model2ASP.py merged the empty bins (the bins the encoding uses);
   - reports the realized maximum tree depth from the Forest Size section, not
     the configured --max-depth cap;
   - grounds the FULL ASP program (encoding.lp + random_forest.lp + pairs/pair_0.lp,
-    with selected(F) asserted for pair_0 features) and parses the grounded size
-    (#rules, #atoms);
+    with selected(F) external for the pair_0 features, as compute_mus.py grounds
+    it) and parses the grounded size (#rules, #atoms);
   - writes a booktabs LaTeX table to models/model_info_table.tex.
 
 Program size uses a single representative pair (pairs/pair_0.lp), so the model's
 pairs must already be generated (utils/generate_items.py). The size
 reflects the full program actually solved: encoding + forest + pair_0 items,
-plus selected(F) facts for every feature in pair_0.
+plus #external selected(F) for every feature in pair_0.
 
 Run from the repo root:
     python make_model_table.py
 Requires clingo on PATH.
 """
 import glob
+import json
 import os
 import re
 import subprocess
@@ -56,24 +59,24 @@ def program_size(rf_lp, pair_lp):
     """Ground encoding+forest+pair_0; return (rules, atoms) or (None, None) on
     timeout/failure.
 
-    selected(F) is asserted for EVERY feature the pair assigns (the F's in its
-    bin(_,F,_) facts), so the explanation machinery (the item 3/4 derivations
-    in encoding.lp, guarded by selected(F)) actually grounds — otherwise
-    selected/1 is undefined and those rules collapse to nothing. Feature
-    derivation matches compute_mus.py.
+    selected(F) is declared external for EVERY feature the pair assigns (the
+    F's in its bin(_,F,_) facts), as compute_mus.py does: the program is
+    grounded once and solved under every truth assignment of selected/1, so
+    the explanation machinery (the item 3/4 derivations in encoding.lp,
+    guarded by selected(F)) grounds in full. Facts would let the grounder
+    simplify it to the single candidate S = F. Feature derivation matches
+    compute_mus.py.
     """
     pair_text = open(pair_lp).read()
     feats = sorted(set(int(f) for f in re.findall(
         r"bin\(\s*\d+\s*,\s*(\d+)\s*,\s*\d+\s*\)\.", pair_text)))
-    selected_facts = "\n".join(f"selected({f})." for f in feats) + "\n"
+    selected_externals = "\n".join(f"#external selected({f})." for f in feats) + "\n"
     # Ground only (--mode=gringo, aspif output), with NO solving, so the program
-    # is not simplified. With selected(F) for every pair feature the program is
-    # UNSAT, which would make the solver report Atoms=0 (no Original count kept);
-    # the grounder's aspif output gives the true size regardless of SAT/UNSAT.
+    # is not simplified by the solver's preprocessing.
     try:
         out = subprocess.run(
             ["clingo", "--mode=gringo", ENCODING, rf_lp, pair_lp, "-"],
-            input=selected_facts,
+            input=selected_externals,
             capture_output=True, text=True, timeout=CLINGO_TIMEOUT,
         ).stdout
     except subprocess.TimeoutExpired:
@@ -105,6 +108,9 @@ def main():
         if not os.path.exists(stats):
             continue
         info = model_stats(stats)
+        with open(os.path.join(mdir, "split_points.json")) as f:
+            split_points = json.load(f)
+        info["avgsplit"] = sum(map(len, split_points.values())) / len(split_points)
         pair_lp = os.path.join(mdir, "pairs", PAIR)
         if os.path.exists(pair_lp):
             info["rules"], info["atoms"] = program_size(rf_lp, pair_lp)
@@ -124,7 +130,7 @@ def main():
         r"\caption{Best random forest per dataset (selected by weighted $F_1$) and "
         r"the size of the full ASP program "
         r"(\texttt{encoding.lp} + forest + \texttt{pair\_0.lp}, with "
-        r"$\mathit{selected}(F)$ asserted for every feature in \texttt{pair\_0.lp}). "
+        r"$\mathit{selected}(F)$ external for every feature in \texttt{pair\_0.lp}). "
         r"$T$: trees; $D_{\max}$: realized maximum tree depth; "
         r"Feat: features used by the forest (dataset features in parentheses); "
         r"$C$: classes predicted on the test set (dataset classes in parentheses); "

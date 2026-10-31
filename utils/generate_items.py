@@ -6,6 +6,8 @@ import argparse
 import joblib
 import numpy as np
 
+from empty_bins import bin_value
+
 parser = argparse.ArgumentParser(description='Generate random item pairs as ASP facts.')
 parser.add_argument('model_path', help='Path to the model .pkl file')
 parser.add_argument('--n_pairs', type=int, default=5, help='Number of pairs to generate (default: 5)')
@@ -79,24 +81,18 @@ def bin_interval(feat_idx, b):
 def random_bins():
     """Return a dict {feat_idx: bin} for all features in split_points.
 
-    Bins are drawn uniformly, so an item may fall in a bin that contains no
-    natural number for a natural-valued feature: features are treated as real
-    valued (see the bin encoding comment in model2ASP.py).
+    Bins are drawn uniformly. model2ASP.py merges the bins of integer-valued
+    features that contain no integer, so every bin holds a value of its feature.
     """
     return {f: random.randint(0, len(split_points[f])) for f in feat_indices}
 
 
 def bins_to_feature_vector(bins):
-    """Convert bin assignments to a feature vector using threshold midpoints."""
+    """Convert bin assignments to a feature vector: one value per bin that stays
+    in the bin once cast to float32 (utils/empty_bins.py)."""
     x = np.zeros(n_features)
     for feat_idx, b in bins.items():
-        thresholds = split_points[feat_idx]
-        if b == 0:
-            x[feat_idx] = thresholds[0] - 1.0
-        elif b == len(thresholds):
-            x[feat_idx] = thresholds[-1] + 1.0
-        else:
-            x[feat_idx] = (thresholds[b - 1] + thresholds[b]) / 2.0
+        x[feat_idx] = bin_value(split_points[feat_idx], b)
     return x
 
 

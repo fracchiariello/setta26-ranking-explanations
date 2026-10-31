@@ -1,11 +1,11 @@
 """
 Test-set performance of the selected forests under hard and soft voting.
 
-learn_random_forest.py (and hence model_statistics.txt, best_models.txt and
-models/model_info_table.tex) scores each forest with sklearn's
-forest.predict(), which is SOFT voting: the class with the highest mean
-probability estimate across the trees. The ASP encoding instead explains the
-forest under HARD majority voting: each tree votes for the class of the leaf
+learn_random_forest.py scores each forest under HARD majority voting by
+default (--voting soft uses sklearn's forest.predict(), SOFT voting: the class
+with the highest mean probability estimate across the trees), and records the
+rule in model_statistics.txt. The ASP encoding explains the forest under HARD
+majority voting: each tree votes for the class of the leaf
 the item reaches, and the most-voted class wins, ties broken to the lowest
 class index (prediction(I,C) in encoding.lp). This script recomputes the
 test-set metrics under both rules so the reported performance can match the
@@ -96,15 +96,19 @@ def metrics(y_true, y_pred, class_labels):
 
 
 def stored_stats(model_dir):
-    """Test-set size and soft-vote weighted F1 recorded at training time."""
+    """Test-set size, weighted F1 and the voting rule ("hard" or "soft")
+    recorded at training time; models trained before the Voting line existed
+    were scored with soft voting."""
     path = os.path.join(model_dir, "model_statistics.txt")
     if not os.path.exists(path):
-        return None, None
+        return None, None, None
     t = open(path).read()
     n_test = re.search(r"Test set size:\s*(\d+)", t)
     wf1 = re.search(r"weighted avg\s+[\d.]+\s+[\d.]+\s+([\d.]+)", t)
+    voting = re.search(r"Voting:\s*(\w+)", t)
     return (int(n_test.group(1)) if n_test else None,
-            float(wf1.group(1)) if wf1 else None)
+            float(wf1.group(1)) if wf1 else None,
+            voting.group(1) if voting else "soft")
 
 
 def evaluate(model_dir, test_size, random_state):
@@ -130,13 +134,14 @@ def evaluate(model_dir, test_size, random_state):
     }
 
     # The split is recreated from scratch, so check it against what training
-    # recorded: same test-set size and same soft-vote weighted F1 (4 decimals).
-    n_test, stored_wf1 = stored_stats(model_dir)
+    # recorded: same test-set size and same weighted F1 (4 decimals) under the
+    # voting rule training used.
+    n_test, stored_wf1, voting = stored_stats(model_dir)
     if n_test is not None and n_test != row["n_test"]:
         row["warnings"].append(f"test set has {row['n_test']} items, "
                                f"model_statistics.txt says {n_test}")
-    if stored_wf1 is not None and abs(stored_wf1 - row["soft"]["weighted_f1"]) > 5e-5:
-        row["warnings"].append(f"soft weighted F1 {row['soft']['weighted_f1']:.4f} "
+    if stored_wf1 is not None and abs(stored_wf1 - row[voting]["weighted_f1"]) > 5e-5:
+        row["warnings"].append(f"{voting} weighted F1 {row[voting]['weighted_f1']:.4f} "
                                f"!= {stored_wf1:.4f} in model_statistics.txt")
     if list(forest.classes_) != sorted(class_labels):
         row["warnings"].append(f"forest.classes_ {list(forest.classes_)} does not "

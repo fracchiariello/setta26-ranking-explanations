@@ -18,13 +18,17 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 
 
 def load(results_dir, mode):
-    """{dataset: [row, ...]} from <mode>_<dataset>_pair<k>.json files."""
+    """{dataset: [row, ...]} from <mode>_<dataset>_pair<k>.json files. Each
+    row also gets n_features, the number of features of the model."""
     out = defaultdict(list)
     for path in glob.glob(os.path.join(results_dir, f"{mode}_*_pair*.json")):
         # Skips files of earlier runs, named ..._pair<k>_t<timeout>.json.
         m = re.match(rf"{mode}_(.+)_pair\d+\.json$", os.path.basename(path))
         if m:
-            out[m.group(1)].extend(json.load(open(path))[0]["rows"])
+            result = json.load(open(path))[0]
+            for row in result["rows"]:
+                row["n_features"] = len(result.get("domains", {})) or None
+            out[m.group(1)].extend(result["rows"])
     return out
 
 

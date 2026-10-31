@@ -7,7 +7,7 @@ running example. This script runs the same exhaustive search quietly, in
 chunks, and times it. Bin combinations are labelled by querying the sklearn
 forest as a black box under hard majority voting (ties -> lowest class, as
 prediction(I,C) in encoding.lp); bins are turned into feature values with the
-midpoint convention of utils/generate_items.py.
+bin representatives of utils/empty_bins.py, as in utils/generate_items.py.
 
 All AXps (default):
 
@@ -60,11 +60,16 @@ import numpy as np
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
+sys.path.insert(0, os.path.join(BASE, "utils"))
 from compute_axp_bruteforce import TRAVERSAL_RULES, parse_model_atoms, run_clingo  # noqa: E402
+from empty_bins import bin_value  # noqa: E402
 
 ENCODING_LP = os.path.join(BASE, "encoding.lp")
-DEFAULT_MODELS = ["models/chess/t30_d7", "models/heart+disease/t10_d3"]
-DEFAULT_FIRST_MODELS = DEFAULT_MODELS + ["models/glioma/t30_d5", "models/breast+cancer/t10_d3"]
+# Labelling the whole bin space (all AXps) is only feasible on small spaces,
+# smaller than those of the models in models/; give such a model explicitly.
+DEFAULT_FIRST_MODELS = ["models/heart+disease/t100_d3", "models/breast+cancer/t100_d3",
+                        "models/glioma/t100_d5"]
+DEFAULT_MODELS = DEFAULT_FIRST_MODELS[:1]
 CHUNK = 1 << 20
 # Largest per-pair table of agreement patterns (2^|F| x classes) in all-AXps mode;
 # its bincount needs 8 bytes per entry, ~1 GB here.
@@ -75,9 +80,9 @@ PAIR_BIN_RE = re.compile(r"bin\((1|2)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)\.")
 
 
 def bin_values(ts):
-    """One representative value per bin: below, between, above the thresholds."""
-    return np.array([ts[0] - 1.0] + [(a + b) / 2.0 for a, b in zip(ts, ts[1:])]
-                    + [ts[-1] + 1.0])
+    """One representative value per bin, inside the bin once cast to float32
+    (utils/empty_bins.py)."""
+    return np.array([bin_value(ts, b) for b in range(len(ts) + 1)])
 
 
 class Space:
@@ -274,7 +279,12 @@ def is_sufficient(space, pair, mask, deadline):
 def first_axp(space, pair, timeout):
     """Deletion-based search for one AXp: drop each candidate feature in turn
     while the rest stays sufficient. Sufficiency is monotone, so the result is
-    subset-minimal. Returns (sufficiency checks, combinations labelled)."""
+    subset-minimal. Returns (sufficiency checks, combinations labelled).
+
+    Every finished check is appended to pair.checks as [subset size,
+    sufficient, seconds, combinations labelled], also when the search then
+    times out; pair.weak is the sufficient subset reached so far (a weak AXp,
+    whose size bounds that of the AXp being computed)."""
     t0 = time.perf_counter()
     assert sorted(pair.cols) == list(range(len(space.feats))), "pair does not bin every feature"
     v = np.zeros((2, len(space.feats)), dtype=np.int16)
@@ -283,12 +293,17 @@ def first_axp(space, pair, timeout):
     assert pair.c1 <= pair.c2, "item 1 is ranked above item 2"
     mask = (1 << len(pair.cand)) - 1
     checks = labelled = 0
+    pair.checks = []
+    pair.weak = mask
     for j in range(len(pair.cand)):
+        t_check = time.perf_counter()
         ok, n = is_sufficient(space, pair, mask & ~(1 << j), t0 + timeout)
+        pair.checks.append([bin(mask).count("1") - 1, ok, time.perf_counter() - t_check, n])
         checks += 1
         labelled += n
         if ok:
             mask &= ~(1 << j)
+            pair.weak = mask
     pair.axps = [mask]
     pair.time = time.perf_counter() - t0
     return checks, labelled
@@ -317,11 +332,16 @@ def run_model_first(model_dir, n_pairs, validate, timeout, only_pair=None):
             checks, labelled = first_axp(space, p, timeout)
         except Timeout:
             print(f"  {pair:<10} timeout ({timeout:g}s)", flush=True)
-            rows.append({"pair": pair, "solved": False, "reason": "timeout"})
+            weak = getattr(p, "weak", None)
+            rows.append({"pair": pair, "solved": False, "reason": "timeout",
+                         "checks": getattr(p, "checks", []),
+                         "weak_axp": p.features(weak) if weak is not None else None,
+                         "size_ub": bin(weak).count("1") if weak is not None else len(p.cand)})
             continue
         axp = p.axps[0]
         row = {"pair": pair, "solved": True, "axp": p.features(axp),
-               "size": bin(axp).count("1"), "time": p.time, "labelled": labelled}
+               "size": bin(axp).count("1"), "time": p.time, "labelled": labelled,
+               "checks": p.checks}
         line = (f"  {pair:<10} AXp={p.features(axp)}  size={row['size']}  "
                 f"time={p.time:.3f}s  checks={checks}  labelled={labelled:,}")
         if validate:

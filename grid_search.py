@@ -4,13 +4,16 @@ Train-only grid search for selecting the best random forest per dataset.
 For every (trees, depth) combination this trains a random forest with sklearn
 (via learn_random_forest.py) and flags, per dataset, two winners: the model with
 the highest macro-F1 and the one with the highest weighted-F1 (which may be the
-same model). It does NOT run the ASP / pairs / benchmark pipeline and ignores
+same model). Scores are those learn_random_forest.py records, under hard
+(majority) voting unless the config sets "voting": "soft". Ties go to the
+smaller model: fewer trees, then lower depth. It does NOT run the ASP / pairs / benchmark pipeline and ignores
 bins entirely — it only trains models and compares them.
 
-Every trained model is saved under models/<dataset>/t<trees>_d<depth>/
-(random_forest.pkl + model_statistics.txt), kept separate from the experiments/
-pipeline outputs; none are discarded. A standalone performance table for every
-trained model is written to models/grid_search_performance.txt.
+Every trained model is saved under <models-root>/<dataset>/t<trees>_d<depth>/
+(random_forest.pkl + model_statistics.txt; --models-root defaults to models/);
+none are discarded. A standalone performance table for every trained model is
+written to models/grid_search_performance.txt, and the weighted-F1 winners to
+models/best_models.txt.
 
 NOTE: per the project guidelines (CLAUDE.md), the user runs this command; it is
 not executed automatically.
@@ -24,13 +27,13 @@ Usage:
     python grid_search.py --datasets breast+cancer+wisconsin+diagnostic wine+quality
     python grid_search.py --all-datasets     # every data/<dataset> with a config.json
     python grid_search.py --config my_config.json
+    python grid_search.py --models-root /tmp/grid   # keep the grid out of models/
 """
 
 import argparse
 import datetime
 import json
 import os
-import random
 import re
 import subprocess
 import sys
@@ -127,20 +130,20 @@ def read_model_info(model_dir):
     return info
 
 
-def grid_search_models(datasets, trees_grid, depth_grid, learn_params=None):
+def grid_search_models(datasets, trees_grid, depth_grid, learn_params=None,
+                       models_root=None):
     """Train-only grid search: for each dataset, sweep (trees, depth), train the
     random forest with sklearn. In the performance table, EVERY config tied at
     the dataset's max macro-F1 (and max weighted-F1) is flagged with a '*'. For
     the console summary / results tuple a single winner per metric is chosen
-    uniformly at random among the tied configs (seeded by dataset + random-state,
-    so it is reproducible), rather than always defaulting to the first/smallest.
+    among the tied configs: the smaller model (fewer trees, then lower depth).
 
     learn_params: optional {trainer_flag: value} of fixed learning knobs (e.g.
     {"--min-samples-leaf": 5}) applied to every model; unset knobs let the trainer
     use its own defaults.
 
-    Every trained model is saved under models/<dataset>/t<trees>_d<depth>/; none
-    are discarded.
+    Every trained model is saved under <models_root>/<dataset>/t<trees>_d<depth>/
+    (models_root defaults to models/); none are discarded.
 
     Returns (results, perf_rows):
       results   — list of (dataset, mf1_trees, mf1_depth, best_macro_f1,
@@ -155,9 +158,7 @@ def grid_search_models(datasets, trees_grid, depth_grid, learn_params=None):
     """
     # Flatten the fixed learning knobs into trainer CLI args (["--flag", "val", ...]).
     learn_args = [str(x) for kv in (learn_params or {}).items() for x in kv]
-    # Seed for the random tie-break, taken from the resolved random-state knob so
-    # the chosen winner is reproducible across re-runs; default 42 when unset.
-    seed = (learn_params or {}).get("--random-state", 42)
+    models_root = models_root or os.path.join(BASE_DIR, "models")
 
     results = []
     perf_rows = []
@@ -168,7 +169,7 @@ def grid_search_models(datasets, trees_grid, depth_grid, learn_params=None):
             results.append((dataset, None, None, None, None, None, None, 0, None))
             continue
 
-        search_root = os.path.join(BASE_DIR, "models", dataset)
+        search_root = os.path.join(models_root, dataset)
         print(f"\n{'─'*88}")
         print(f"{dataset}  (train-only grid search over trees x depth)")
 
@@ -231,11 +232,8 @@ def grid_search_models(datasets, trees_grid, depth_grid, learn_params=None):
                   f"{os.path.relpath(search_root, BASE_DIR)}/t<trees>_d<depth>/")
 
         # Pick the best (trees, depth) by macro-F1 and by weighted-F1. On ties
-        # (several configs share the max score — common on degenerate/imbalanced
-        # datasets where every config gives the same score) choose uniformly at
-        # random among the tied configs, rather than always taking the first
-        # (smallest) one. Seeded per dataset so the table is reproducible.
-        rng = random.Random(f"{dataset}:{seed}")
+        # (several configs share the max score) take the smaller model: fewer
+        # trees, then lower depth.
 
         def tied_best(metric_index):
             """Return the set of every (trees, depth) tied at the max score for
@@ -249,12 +247,12 @@ def grid_search_models(datasets, trees_grid, depth_grid, learn_params=None):
             return {(t, d) for s, t, d in scored if s == best_score}
 
         def pick_best(tied):
-            """Pick one (trees, depth) from a set of tied-best configs uniformly at
-            random (seeded per dataset); None if the set is empty."""
-            return rng.choice(sorted(tied)) if tied else None
+            """The smallest (trees, depth) among the tied-best configs; None if
+            the set is empty."""
+            return min(tied) if tied else None
 
-        # All tied-best configs get a '*' in the table; one random pick among them
-        # is the single winner used for the console summary and results tuple.
+        # All tied-best configs get a '*' in the table; the smallest of them is
+        # the single winner used for the console summary and results tuple.
         tied_mf1 = tied_best(4)   # macro_f1 is dataset_rows index 4
         tied_wf1 = tied_best(5)   # weighted_f1 is dataset_rows index 5
         best_mf1_td = pick_best(tied_mf1)
@@ -346,6 +344,22 @@ def write_performance_table(perf_rows, trees_grid, depth_grid):
     return perf_path
 
 
+def write_best_models(best_models, voting):
+    """Write the weighted-F1 winner of every dataset to models/best_models.txt."""
+    path = os.path.join(BASE_DIR, "models", "best_models.txt")
+    lines = ["Best random-forest models selected from models/grid_search_performance.txt",
+             f"Metric: highest Weighted-F1 ({voting} voting) only; ties: fewer trees, "
+             "then lower depth.", "",
+             f"{'Dataset':<24} {'Config':>8} {'WtdF1':>8}",
+             f"{'-'*24} {'-'*8} {'-'*8}"]
+    for dataset, _, _, _, wft, wfd, wf1, _, _ in best_models:
+        if wft is not None:
+            lines.append(f"{dataset:<24} {f't{wft}_d{wfd}':>8} {wf1:>8.4f}")
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    return path
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Train-only grid search flagging the best random forest by "
@@ -373,6 +387,12 @@ def main():
                         help="Min samples in a leaf (trainer default: 2)")
     parser.add_argument("--ccp-alpha", type=float, default=None,
                         help="Cost-complexity pruning parameter (trainer default: 0.0)")
+    parser.add_argument("--criterion", choices=["gini", "entropy", "log_loss"], default=None,
+                        help="Split quality criterion (trainer default: gini)")
+    parser.add_argument("--voting", choices=["hard", "soft"], default=None,
+                        help="Voting rule the models are scored with (trainer default: hard)")
+    parser.add_argument("--models-root", default=None,
+                        help="Where to save the trained models (default: models/)")
     parser.add_argument("--test-size", type=float, default=None,
                         help="Test set fraction (trainer default: 0.2)")
     parser.add_argument("--random-state", type=int, default=None,
@@ -399,6 +419,8 @@ def main():
     for name, flag in [("min_samples_split", "--min-samples-split"),
                        ("min_samples_leaf", "--min-samples-leaf"),
                        ("ccp_alpha", "--ccp-alpha"),
+                       ("criterion", "--criterion"),
+                       ("voting", "--voting"),
                        ("test_size", "--test-size"),
                        ("random_state", "--random-state")]:
         val = getattr(args, name)
@@ -419,7 +441,7 @@ def main():
     print("=" * 88)
 
     best_models, perf_rows = grid_search_models(
-        args.datasets, args.trees, args.depth, learn_params)
+        args.datasets, args.trees, args.depth, learn_params, args.models_root)
 
     print(f"\n{'='*92}")
     print("BEST MODEL PER DATASET  (by macro-F1 and by weighted-F1)")
@@ -442,6 +464,8 @@ def main():
     perf_path = write_performance_table(perf_rows, args.trees, args.depth)
     print(f"\nPerformance table saved to: "
           f"{os.path.relpath(perf_path, BASE_DIR)}")
+    best_path = write_best_models(best_models, learn_params.get("--voting", "hard"))
+    print(f"Best models saved to: {os.path.relpath(best_path, BASE_DIR)}")
 
 
 if __name__ == "__main__":

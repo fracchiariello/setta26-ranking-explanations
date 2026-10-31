@@ -1,0 +1,120 @@
+{
+  "generated": "20261030_231458",
+  "params": {
+    "models_dir": "models",
+    "datasets": null,
+    "pair_files": [
+      "models/obesity/t100_d8/pairs/pair_66.lp"
+    ],
+    "pairs": 5,
+    "repeats": 3,
+    "first_only": true,
+    "timeout_first": 3600,
+    "timeout_all": 18000
+  },
+  "results": [
+    {
+      "dataset": "obesity",
+      "config": "t100_d8",
+      "pair": "pair_66.lp",
+      "n_features": 16,
+      "first": {
+        "size": null,
+        "axp": null,
+        "time_mean_s": null,
+        "time_std_s": null,
+        "timeout": true,
+        "weak_axp": [
+          3,
+          4,
+          12,
+          14,
+          15
+        ],
+        "call_log": [
+          {
+            "ground_s": 0.8134751562029123,
+            "calls": [
+              [
+                16,
+                true,
+                0.6046486441046
+              ],
+              [
+                15,
+                true,
+                0.05486590228974819
+              ],
+              [
+                14,
+                true,
+                0.11304393969476223
+              ],
+              [
+                13,
+                true,
+                0.15520117990672588
+              ],
+              [
+                12,
+                false,
+                0.05784714315086603
+              ],
+              [
+                12,
+                false,
+                0.1894928188994527
+              ],
+              [
+                12,
+                true,
+                0.14678207971155643
+              ],
+              [
+                11,
+                true,
+                0.27502039447426796
+              ],
+              [
+                10,
+                true,
+                1.5789556205272675
+              ],
+              [
+                9,
+                true,
+                2.1190190967172384
+              ],
+              [
+                8,
+                true,
+                2.973557598888874
+              ],
+              [
+                7,
+                true,
+                19.9917151350528
+              ],
+              [
+                6,
+                true,
+                37.275431618094444
+              ],
+              [
+                5,
+                false,
+                46.69601337146014
+              ],
+              [
+                5,
+                true,
+                2364.4300532061607
+              ]
+            ]
+          }
+        ]
+      },
+      "all": null
+    }
+  ]
+}

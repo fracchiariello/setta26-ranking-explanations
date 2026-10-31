@@ -27,6 +27,13 @@ parser.add_argument('--max-depth', type=int, default=3, help='Maximum tree depth
 parser.add_argument('--min-samples-split', type=int, default=5, help='Min samples to split a node')
 parser.add_argument('--min-samples-leaf', type=int, default=2, help='Min samples in a leaf')
 parser.add_argument('--ccp-alpha', type=float, default=0.0, help='Cost-complexity pruning parameter')
+parser.add_argument('--criterion', choices=['gini', 'entropy', 'log_loss'], default='gini',
+                    help='Split quality criterion')
+parser.add_argument('--voting', choices=['hard', 'soft'], default='hard',
+                    help='How the trees are combined when the forest is evaluated: hard '
+                         '(majority vote, ties -> lowest class, as in encoding.lp and '
+                         'Breiman 2001) or soft (sklearn forest.predict, averaged '
+                         'class probabilities)')
 parser.add_argument('--test-size', type=float, default=0.2, help='Test set fraction')
 parser.add_argument('--random-state', type=int, default=42, help='Random seed')
 parser.add_argument('--output-dir', default=None,
@@ -45,7 +52,8 @@ print(f"Dataset path: {dataset_dir}")
 print(f"Tree PNG generation: {'ENABLED' if generate_tree_pngs else 'DISABLED'}")
 print(f"Classifier params: n_estimators={args.n_estimators}, max_depth={args.max_depth}, "
       f"min_samples_split={args.min_samples_split}, min_samples_leaf={args.min_samples_leaf}, "
-      f"ccp_alpha={args.ccp_alpha}, test_size={args.test_size}, random_state={args.random_state}")
+      f"ccp_alpha={args.ccp_alpha}, criterion={args.criterion}, test_size={args.test_size}, "
+      f"random_state={args.random_state}, voting={args.voting}")
 
 # ============================================================================
 # PART 1: Classification with Random Forest
@@ -128,16 +136,30 @@ rf_classifier = RandomForestClassifier(
     min_samples_split=args.min_samples_split,
     min_samples_leaf=args.min_samples_leaf,
     ccp_alpha=args.ccp_alpha,
+    criterion=args.criterion,
     random_state=args.random_state
 )
 rf_classifier.fit(X_train, y_train)
 
+
+def hard_vote(forest, X):
+    """Majority vote of the trees, ties -> lowest class index (prediction(I,C)
+    in encoding.lp). Each tree predicts an index into forest.classes_."""
+    votes = np.array([est.predict(X).astype(int) for est in forest.estimators_])
+    counts = np.apply_along_axis(np.bincount, 0, votes, minlength=len(forest.classes_))
+    # argmax returns the first maximum, i.e. the lowest class index.
+    return forest.classes_[counts.argmax(axis=0)]
+
+
+def predict(X):
+    return hard_vote(rf_classifier, X) if args.voting == 'hard' else rf_classifier.predict(X)
+
+
 # Make predictions
-y_pred = rf_classifier.predict(X_test)
-y_pred_proba = rf_classifier.predict_proba(X_test)
+y_pred = predict(X_test)
 
 # Evaluate
-train_accuracy = accuracy_score(y_train, rf_classifier.predict(X_train))
+train_accuracy = accuracy_score(y_train, predict(X_train))
 accuracy = accuracy_score(y_test, y_pred)
 print(f"\nTrain Accuracy: {train_accuracy:.4f}")
 print(f"Test Accuracy:  {accuracy:.4f}")
@@ -182,6 +204,8 @@ with open(stats_path, 'w') as f:
     f.write(f"  Min samples split: {rf_classifier.min_samples_split}\n")
     f.write(f"  Min samples leaf: {rf_classifier.min_samples_leaf}\n")
     f.write(f"  CCP alpha: {rf_classifier.ccp_alpha}\n")
+    f.write(f"  Criterion: {rf_classifier.criterion}\n")
+    f.write(f"  Voting: {args.voting}\n")
     f.write(f"  Number of features: {rf_classifier.n_features_in_}\n")
     f.write(f"  Number of classes: {len(classes)}\n")
     # Distinct classes the model actually predicts on the test set (<= total).
@@ -199,7 +223,7 @@ with open(stats_path, 'w') as f:
     precision, recall, f1, support = precision_recall_fscore_support(
         y_test, y_pred, labels=class_labels, zero_division=0)
 
-    f.write("Performance Metrics:\n")
+    f.write(f"Performance Metrics ({args.voting} voting):\n")
     f.write(f"  Train Accuracy: {train_accuracy:.4f}\n")
     f.write(f"  Test Accuracy:  {accuracy:.4f}\n\n")
 

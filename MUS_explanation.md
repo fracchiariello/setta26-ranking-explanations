@@ -63,42 +63,55 @@ appears in a `bin(I,F,B).` fact is a candidate. This means only features
 actually assigned to the pair are considered — no external specification needed.
 
 
-## The WASP Encoding (compute_mus.py)
+## Deletion-based Extraction (compute_mus.py)
 
-WASP finds MUSes via the `--mus` flag. To use it, each assumption must be
-wrapped in a `__debug__` choice rule:
+`compute_mus.py` grounds the program once with the clingo Python API, with
+every candidate `selected(F)` declared external:
 
 ```prolog
-selected(F) :- __debug__(selected(F)).
-{__debug__(selected(F))}.
+#external selected(F).   % one per candidate feature F
 ```
 
-This lets WASP control which `selected(F)` facts are active. It then searches
-for minimal subsets of `__debug__` atoms whose activation makes the program
-UNSAT.
+A candidate set S is then checked with one solve call that sets `selected(F)`
+true for F in S and false otherwise: S is a weak AXp iff the call is UNSAT.
+Every call reuses the grounding and the nogoods clingo learned in earlier
+calls.
 
-The full pipeline is:
+### One MUS: deletion
 
 ```
-clingo --output=smodels program.lp | wasp --mus=__debug__ -n0
+S := all candidate features            % UNSAT whenever class(1) <= class(2)
+for F in S, in increasing order:
+    if S \ {F} is UNSAT: S := S \ {F}
+return S
 ```
 
-### `clingo --output=smodels program.lp`
+Weak AXps are monotone (a superset of a weak AXp is one too), so the final S
+is subset-minimal: putting back any one feature was needed for UNSAT when it
+was tested, and S has only shrunk since. This takes one solve call per
+candidate feature.
 
-Clingo grounds the ASP program (instantiates all variables with concrete
-values) but does not solve it. Instead, `--output=smodels` serialises the
-grounded program in the **smodels format** — a low-level numeric encoding of
-rules and atoms that WASP can read. The result is piped directly to WASP.
+### All MUSes: MARCO
 
-### `wasp --mus=__debug__ -n0`
+A second clingo program, the *map*, has one atom `s(F)` per feature and
+holds the subsets not explored yet. Each round:
 
-WASP receives the grounded program and searches for MUSes.
+1. Take a model of the map as a seed, and grow it to a maximal subset allowed
+   by the map (a feature is added unless it completes a known MUS).
+2. If the seed is UNSAT, shrink it to a MUS by deletion, report it, and add
+   `:- s(F1), ..., s(Fk).` for its features: no later seed contains it.
+3. If the seed is SAT, it is a maximal satisfiable subset, because every
+   feature outside it completes a known MUS. Its complement is a minimal
+   correction subset (MCS), and `:- not s(F1), ..., not s(Fk).` makes every
+   later seed hit it.
 
-- `--mus=__debug__` tells WASP which atoms are the **assumptions**: only atoms
-  whose predicate name is `__debug__` are treated as the candidate set. WASP
-  looks for minimal subsets of these atoms whose joint activation makes the
-  program UNSAT.
-- `-n0` means **find all MUSes** (0 = no limit). Use `-n1` for just the first.
+Every MUS hits every MCS, so when the map has no model all MUSes have been
+reported. The first seed is all the features, so the first MUS is the one
+deletion alone computes. During a shrink, a candidate that misses a known
+MCS lies inside a maximal satisfiable subset and is SAT without a solve call.
+
+`-n K` stops after K MUSes (`-n 1`: deletion only); `-n 0` (default) finds
+them all.
 
 
 ## Interpreting the Output
@@ -122,7 +135,10 @@ difference between items 1 and 2.
 
 ```bash
 python compute_mus.py \
-    model/breast+cancer+wisconsin+diagnostic/random_forest.lp \
+    models/breast+cancer/t100_d3/random_forest.lp \
     encoding.lp \
-    model/breast+cancer+wisconsin+diagnostic/pair_1.lp
+    models/breast+cancer/t100_d3/pairs/pair_1.lp
 ```
+
+`--progress` also prints the weak AXp left after each feature the first
+shrink drops, so a run stopped early still has a (non-minimal) explanation.

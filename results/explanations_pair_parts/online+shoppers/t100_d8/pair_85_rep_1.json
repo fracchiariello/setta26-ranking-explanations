@@ -1,0 +1,132 @@
+{
+  "generated": "20261030_232536",
+  "params": {
+    "models_dir": "models",
+    "datasets": null,
+    "pair_files": [
+      "models/online+shoppers/t100_d8/pairs/pair_85.lp"
+    ],
+    "pairs": 5,
+    "repeats": 3,
+    "first_only": true,
+    "timeout_first": 3600,
+    "timeout_all": 18000
+  },
+  "results": [
+    {
+      "dataset": "online+shoppers",
+      "config": "t100_d8",
+      "pair": "pair_85.lp",
+      "n_features": 17,
+      "first": {
+        "size": null,
+        "axp": null,
+        "time_mean_s": null,
+        "time_std_s": null,
+        "timeout": true,
+        "weak_axp": [
+          7,
+          8,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "call_log": [
+          {
+            "ground_s": 0.7532958127558231,
+            "calls": [
+              [
+                17,
+                true,
+                0.4594617113471031
+              ],
+              [
+                16,
+                true,
+                0.04694892279803753
+              ],
+              [
+                15,
+                true,
+                0.07587511651217937
+              ],
+              [
+                14,
+                true,
+                0.049130759201943874
+              ],
+              [
+                13,
+                true,
+                0.060041842982172966
+              ],
+              [
+                12,
+                true,
+                0.11259364057332277
+              ],
+              [
+                11,
+                true,
+                0.4515827680006623
+              ],
+              [
+                10,
+                true,
+                3.843422021716833
+              ],
+              [
+                9,
+                false,
+                0.16804846189916134
+              ],
+              [
+                9,
+                false,
+                0.057325346395373344
+              ],
+              [
+                9,
+                true,
+                2.6446968717500567
+              ],
+              [
+                8,
+                true,
+                392.99971988331527
+              ],
+              [
+                7,
+                true,
+                1392.1255996432155
+              ],
+              [
+                6,
+                false,
+                1.0797057515010238
+              ],
+              [
+                6,
+                false,
+                40.64672636985779
+              ],
+              [
+                6,
+                false,
+                0.20855109114199877
+              ],
+              [
+                6,
+                false,
+                0.21911682933568954
+              ]
+            ]
+          }
+        ]
+      },
+      "all": null
+    }
+  ]
+}
