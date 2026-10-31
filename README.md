@@ -150,7 +150,7 @@ number of relevant features, for scaling experiments.
 
 ## Paper Results
 
-The ASP columns of the results table and the per-instance figure come from
+The ASP columns of the results table and the size-time figure come from
 `slurm/table2_asp.sbatch`: 10 models, 100 pairs, one AXp per pair (deletion),
 3 repetitions, with the same timeout. A pair counts as solved only if every
 repetition finishes. Each run also logs its grounding time and every solver
@@ -161,7 +161,7 @@ mkdir -p results/explanations_pair_parts/logs
 sbatch --array=0-999 slurm/table2_asp.sbatch
 python3 merge_explanation_parts.py
 python3 make_table2.py      # results table, with the baseline columns
-python3 plot_instances.py   # per-instance figure (time and size of the AXp)
+python3 plot_size_time.py   # size-time figure (time against free features)
 ```
 
 ## Datasets

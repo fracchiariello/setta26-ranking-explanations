@@ -1,7 +1,7 @@
 #!/bin/bash
 # Brute-force baseline for Table 2, with Table 2's protocol: one AXp (the first,
 # by deletion) per (model, pair), with a 1 h timeout; one repetition, on one
-# core of the partition used for the paper's experiments. Array task j runs the
+# core. Array task j runs the
 # PER_TASK consecutive pairs i = (OFFSET + j) * PER_TASK + k, k < PER_TASK, and
 # pair i is pair i % PAIRS of the (i / PAIRS)-th model in models/*/t*_d*
 # (10 models, PAIRS = 100 pairs each). A pair that already has a result is
@@ -9,10 +9,9 @@
 # its first n pairs all have a result and none was solved: submit the first n
 # pairs of every model, then the others with --dependency=afterany on them.
 #
-# SLURM caps array indices at 1000 and CLEPS queues at most 2000 jobs per user,
-# so the 1000 pairs go two per task, next to the 1000 ASP tasks.
+# Several pairs per task (PER_TASK) keep the number of array tasks low.
 # CONDA_ENV (default base) provides Python with the packages of
-# requirements.txt. From the repo root on CLEPS:
+# requirements.txt. From the repo root:
 #   mkdir -p results/bruteforce/logs
 #   sbatch --export=ALL,CONDA_ENV=<env>,PER_TASK=2 --array=0-499 slurm/bruteforce_table2.sbatch
 # or, skipping the models whose first 10 pairs all fail:
@@ -24,7 +23,6 @@
 # 2 breast+cancer, 3 gamma+telescope, 4 glioma, 5 heart+disease, 6 income,
 # 7 obesity, 8 online+shoppers, 9 students+dropout.
 #SBATCH --job-name=bf_table2
-#SBATCH --partition=cpu_homogen
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G

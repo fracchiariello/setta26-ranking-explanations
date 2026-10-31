@@ -11,16 +11,15 @@
 #
 # SLURM caps array indices at 1000; OFFSET runs tasks beyond it.
 # CONDA_ENV (default base) provides Python and the clingo package
-# (requirements.txt). From the repo root on CLEPS:
+# (requirements.txt). From the repo root:
 #   mkdir -p results/explanations_pair_parts/logs
 #   sbatch --export=ALL,CONDA_ENV=<env> --array=0-999 slurm/table2_asp.sbatch
-# Then: python merge_explanation_parts.py && python make_table2.py && python plot_instances.py
+# Then: python merge_explanation_parts.py && python make_table2.py && python plot_size_time.py
 #
 # Tasks 100m..100m+99 belong to model m: 0 automobile, 1 bank+marketing,
 # 2 breast+cancer, 3 gamma+telescope, 4 glioma, 5 heart+disease, 6 income,
 # 7 obesity, 8 online+shoppers, 9 students+dropout.
 #SBATCH --job-name=table2_asp
-#SBATCH --partition=cpu_homogen
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
